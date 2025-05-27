@@ -1,10 +1,13 @@
 import * as THREE from 'three';
 
 window.addEventListener("load", function () {
+    const socket = new WebSocket('ws://localhost:3000');
+    socket.addEventListener('open', () => {
+        socket.send(JSON.stringify({ type: 'init' }));
+    });
     // scena 3D
 
     const scene = new THREE.Scene();
-
     // kamera perspektywiczna - przeczytaj dokładnie objaśnienia w komentarzach
 
     const camera = new THREE.PerspectiveCamera(
@@ -60,7 +63,6 @@ window.addEventListener("load", function () {
         // potwierdzenie w konsoli, że render się wykonuje
 
         console.log("render leci")
-
         //ciągłe renderowanie / wyświetlanie widoku sceny naszą kamerą
 
         renderer.render(scene, camera);
