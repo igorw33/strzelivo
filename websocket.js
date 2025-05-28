@@ -2,18 +2,28 @@ const WebSocket = require('ws');
 
 // prosty routing socketowy
 const handlers = {
+    'init': (ws, data) => {
+        /* tu wstaw funkcję, która waliduje dane gracza i rejestruje go w bazie */
+        console.log(data);
+        // data = {
+        //     type: 'spawn',
+        //     player: 'dxddd'
+        // }
+        // ws.send(JSON.stringify(data));
+    },
 
+    'position': (ws, data) => {/* tu wstaw funkcję, która update'uje pozycję gracza */
+        console.log(data);
+    },
 }
 
 const setupWebSocket = (server) => {
     const wss = new WebSocket.Server({ server });
     wss.on('connection', (ws) => {
-        // console.log("new connection:", ws);
-
         ws.on('message', (msg) => {
             // msg jest buforem hexowym, trzeba go sparsować do json-a
             const data = JSON.parse(msg);
-            console.log(data);
+            handlers[data.type](ws, data);
         })
     })
     /*

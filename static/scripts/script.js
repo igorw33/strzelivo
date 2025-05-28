@@ -1,10 +1,11 @@
 import * as THREE from 'three';
-
+import Net from './Net.js';
 window.addEventListener("load", function () {
-    const socket = new WebSocket('ws://localhost:3000');
-    socket.addEventListener('open', () => {
-        socket.send(JSON.stringify({ type: 'init' }));
-    });
+    const net = new Net("ws://localhost:3000");
+    // a następnie można wysłać dane za pomocą poniższej metody
+    // net.send(type, data);
+    // net.send('init', { x: 10, y: 10 });
+
     // scena 3D
 
     const scene = new THREE.Scene();
@@ -28,7 +29,7 @@ window.addEventListener("load", function () {
 
     // ustal rozmiary renderowanego okna w px (szer, wys)
 
-    renderer.setSize(500, 500);
+    renderer.setSize(window.innerWidth, window.innerHeight);
 
     // dodanie renderera do diva, który istnieje na scenie
 
@@ -45,11 +46,20 @@ window.addEventListener("load", function () {
     // nakierowanie kamery na punkt (0,0,0) w przestrzeni (zakładamy, że istnieje już scena)
 
     camera.lookAt(scene.position);
+    // Geometria: szerokość, wysokość, głębokość
+    const geometry = new THREE.BoxGeometry(100, 10, 20);
 
+    // Materiał (kolor)
+    const material = new THREE.MeshBasicMaterial({ color: 0x00ff00, });
+
+    const cube = new THREE.Mesh(geometry, material);
     // kluczowy element - animacja
 
-    function render() {
+    scene.add(cube);
 
+    function render() {
+        cube.rotation.x += 0.01;
+        cube.rotation.y += 0.01;
 
         //w tym miejscu ustalamy wszelkie zmiany w projekcie (obrót, skalę, położenie obiektów)
         //np zmieniająca się wartość rotacji obiektu
@@ -62,7 +72,7 @@ window.addEventListener("load", function () {
 
         // potwierdzenie w konsoli, że render się wykonuje
 
-        console.log("render leci")
+        // console.log("render leci")
         //ciągłe renderowanie / wyświetlanie widoku sceny naszą kamerą
 
         renderer.render(scene, camera);
