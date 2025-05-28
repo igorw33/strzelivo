@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import Net from './Net.js';
+import Net from './net/Net.js';
 window.addEventListener("load", function () {
     const net = new Net("ws://localhost:3000");
     // a następnie można wysłać dane za pomocą poniższej metody
