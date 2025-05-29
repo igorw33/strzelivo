@@ -2,6 +2,7 @@ import Ui from '../ui/Ui.js';
 import Net from '../net/Net.js';
 import Game from '../game/Game.js';
 import EventBus from './EventBus.js';
+import MovementController from '../game/MovementController.js';
 
 export default class App {
     game;
@@ -14,6 +15,7 @@ export default class App {
 
         this.game = new Game(this.bus);
         this.ui = new Ui(this.bus);
+        this.movementController = new MovementController(this.bus);
         this.net = new Net("ws://localhost:3000", this.bus);
 
         // wysyłamy zdarzenie do innych klas, 

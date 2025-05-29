@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 export default class Game {
     bus;
@@ -8,17 +7,31 @@ export default class Game {
         this.bus = bus;
         this.setBusEvents();
 
-        // Inicjalizacja wartości dla obecnego kierunku ruchu
-        this.moveForward = false;
-        this.moveLeft = false;
-        this.moveBackward = false;
-        this.moveRight = false;
+        this.rotationSpeed = Math.PI / 1080;
     }
 
     setBusEvents = () => {
         this.bus.on("app:init", () => {
             console.log("klasa game gotowa");
             this.generateScene();
+        })
+
+        // Odbiór informacji o wciśniętym bądź zwolnionym przycisku
+        this.bus.on("movementController:keyPress", (data) => {
+            this.moveForward = data.moveForward;
+            this.moveLeft = data.moveLeft;
+            this.moveBackward = data.moveBackward;
+            this.moveRight = data.moveRight;
+        })
+
+        // Odbiór informacji o ruchu myszką i zmiana ustawienia kamery poprzez zastosowanie kwaternionu
+        this.bus.on("movementController:mouseMove", (data) => {
+            this.euler.y -= data.movementX * this.rotationSpeed;
+            this.euler.x -= data.movementY * this.rotationSpeed;
+            this.euler.x = Math.min(Math.max(this.euler.x, -1.57079633), 1.57079633);
+            console.log(this.euler.x, this.euler.y)
+
+            this.camera.quaternion.setFromEuler(this.euler);
         })
     }
 
@@ -27,24 +40,22 @@ export default class Game {
         this.scene = new THREE.Scene();
         this.camera = new THREE.PerspectiveCamera(
             45,    // kąt patrzenia kamery (FOV - field of view)
-            4 / 3,    // proporcje widoku, powinny odpowiadać proporcjom ekranu przeglądarki użytkownika
+            screen.width / screen.height,    // proporcje widoku, powinny odpowiadać proporcjom ekranu przeglądarki użytkownika
             0.1,    // minimalna renderowana odległość
             10000    // maksymalna renderowana odległość od kamery
         );
         this.renderer = new THREE.WebGLRenderer();
         this.renderer.setClearColor(0x0066ff);
-        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.setSize(screen.width, screen.height);
         document.getElementById("root").append(this.renderer.domElement);
         // this.camera.position.x = -200;
         // this.camera.position.y = 200;
         // this.camera.position.z = 200;
-        this.camera.position.set(100, 100, 100);
+        this.camera.position.set(0, 120, 60);
 
         // nakierowanie kamery na punkt (0,0,0) w przestrzeni (zakładamy, że istnieje już scena)
         this.camera.lookAt(this.scene.position);
-
-        //  Inicjalizacja OrbitControls
-        this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+        this.euler = new THREE.Euler().setFromQuaternion(this.camera.quaternion, 'YXZ');
 
         // Generowanie przykładowego elementu
         // Geometria: szerokość, wysokość, głębokość
@@ -53,42 +64,19 @@ export default class Game {
         this.cube = new THREE.Mesh(this.geometry, this.material);
         this.scene.add(this.cube);
 
+        // Generowanie podłogi
+        // this.floorGeometry = new THREE.PlaneGeometry(10000, 10000, 1, 1);
+        // this.floorMaterial = new THREE.MeshBasicMaterial({ color: 0xcccccc });
+        // this.floor = new THREE.Mesh(this.floorGeometry, this.floorMaterial)
+        // this.floor.material.side = THREE.DoubleSide
+        // this.floor.rotation.x = 90 * Math.PI / 180
+        // this.scene.add(this.floor)
+
+        // Pomocnicze osie - można zakomentować/odkomentować (czerwona: x, żółta: y, niebieska: z)
+        this.axes = new THREE.AxesHelper(1000)
+        this.scene.add(this.axes)
+
         this.render();
-
-        // Mapowanie klawiszy
-        document.addEventListener('keydown', (event) => {
-            switch (event.key) {
-                case "w" || "W":
-                    this.moveForward = true;
-                    break;
-                case "a" || "A":
-                    this.moveLeft = true;
-                    break;
-                case "s" || "S":
-                    this.moveBackward = true;
-                    break;
-                case "d" || "d":
-                    this.moveRight = true;
-                    break;
-            }
-        });
-
-        document.addEventListener('keyup', (event) => {
-            switch (event.key) {
-                case "w" || "W":
-                    this.moveForward = false;
-                    break;
-                case "a" || "A":
-                    this.moveLeft = false;
-                    break;
-                case "s" || "S":
-                    this.moveBackward = false;
-                    break;
-                case "d" || "d":
-                    this.moveRight = false;
-                    break;
-            }
-        });
     }
 
     // Funkcja render, wywołująca się cały czas
@@ -102,6 +90,7 @@ export default class Game {
 
         requestAnimationFrame(this.render);
 
+        // Ruch kamery na podstawie naciśniętych przycisków
         if (this.moveForward) {
             // camera.translateZ(-moveSpeed * delta);
             this.camera.translateZ(-4);
@@ -121,7 +110,6 @@ export default class Game {
 
         //ciągłe renderowanie / wyświetlanie widoku sceny naszą kamerą
 
-        this.controls.update();
         this.renderer.render(this.scene, this.camera);
     }
 }

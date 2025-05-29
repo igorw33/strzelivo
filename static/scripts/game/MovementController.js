@@ -1,0 +1,78 @@
+export default class MovementController {
+    bus;
+
+    constructor(bus) {
+        this.bus = bus;
+        this.setBusEvents();
+
+        // Inicjacja zmiennych, w których przechowywany jest stan naciśnięcia przycisków oraz położenia myszy
+        this.moveForward = false;
+        this.moveLeft = false;
+        this.moveBackward = false;
+        this.moveRight = false;
+
+        // Mapowanie przycisków do nazw zmiennych
+        this.keyMap = {
+            w: 'moveForward',
+            a: 'moveLeft',
+            s: 'moveBackward',
+            d: 'moveRight',
+            escape: 'release',
+            p: 'lock'
+        };
+    }
+
+    setBusEvents = () => {
+        this.bus.on("app:init", () => {
+            console.log("klasa movementController gotowa");
+
+            // Listenery kolejno wykrywające naciśnięcie przycisku i jego zwolnienie
+            document.addEventListener('keydown', (event) => {
+                const action = this.keyMap[event.key.toLowerCase()];
+                if (action) {
+                    // Blokowanie kursora przy naciśnięcu klawisza p, odblokowanie przy naciśnięciu escape
+                    if (action == "release") {
+                        document.exitPointerLock();
+                    } else if (action == "lock") {
+                        document.body.requestPointerLock();
+                    } else {
+                        this[action] = true;
+
+                        const data = {
+                            moveForward: this.moveForward,
+                            moveLeft: this.moveLeft,
+                            moveRight: this.moveRight,
+                            moveBackward: this.moveBackward
+                        };
+                        // Wysłanie info o przyciskach do Game.js
+                        this.bus.emit("movementController:keyPress", data);
+                    }
+                };
+            });
+
+            document.addEventListener('keyup', (event) => {
+                const action = this.keyMap[event.key.toLowerCase()];
+                if (action) {
+                    this[action] = false;
+
+                    const data = {
+                        moveForward: this.moveForward,
+                        moveLeft: this.moveLeft,
+                        moveRight: this.moveRight,
+                        moveBackward: this.moveBackward
+                    };
+                    // Wysłanie info o przyciskach do Game.js
+                    this.bus.emit("movementController:keyPress", data);
+                };
+            });
+
+            // Śledzenie ruchów kursora (konieczne do obracania kamerą)
+            document.addEventListener("mousemove", (event) => {
+                if (document.pointerLockElement) {
+                    const data = { movementX: event.movementX, movementY: event.movementY };
+                    this.bus.emit("movementController:mouseMove", data);
+                }
+            });
+        })
+    }
+}
