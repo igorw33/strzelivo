@@ -1,0 +1,26 @@
+import Ui from '../ui/Ui.js';
+import Net from '../net/Net.js';
+import Game from '../game/Game.js';
+import EventBus from './EventBus.js';
+
+export default class App {
+    game;
+    net;
+    ui;
+    bus;
+
+    constructor() {
+        this.bus = new EventBus();
+
+        this.game = new Game(this.bus);
+        this.ui = new Ui(this.bus);
+        this.net = new Net("ws://localhost:3000", this.bus);
+
+        // wysyłamy zdarzenie do innych klas, 
+        // każda klasa może na nie odpowiedzieć, jeśli ustawi event this.bus.on("app:init", callback)
+        this.bus.emit("app:init");
+
+        const data = { type: "xd" };
+        this.bus.emit("game:event", data);
+    }
+}

@@ -1,4 +1,10 @@
-import * as THREE from 'three';
+import App from "./core/App.js";
+
+window.addEventListener("load", function () {
+    const app = new App();
+})
+
+/*import * as THREE from 'three';
 import Net from './net/Net.js';
 window.addEventListener("load", function () {
     const net = new Net("ws://localhost:3000");
@@ -82,3 +88,4 @@ window.addEventListener("load", function () {
 
     render();
 })
+    */

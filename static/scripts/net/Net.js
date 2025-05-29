@@ -1,5 +1,6 @@
 export default class Net {
     socket;
+    bus;
     // na serwerze jest ruter, tu będzie odwrotność
     // jeżeli klient wysyła dane:
     // używa metody send(TYP!!!, dane) -> dane lecą na serwer -> tam są odbierane, wykonywana jest metoda z handlers(data.type)
@@ -17,9 +18,22 @@ export default class Net {
         }
     };
 
-    constructor(url) {
+    constructor(url, bus) {
         this.socket = new WebSocket(url);
+        this.bus = bus;
         this.setupSocket();
+        this.setupBusEvents();
+    }
+
+    setupBusEvents = () => {
+        this.bus.on("app:init", () => {
+            console.log("klasa net gotowa");
+        });
+
+        this.bus.on("game:event", (data) => {
+            console.log(data);
+        });
+        // tu ustawiamy wszystkie this.bus.on(event, callbacks)
     }
 
     setupSocket = () => {
