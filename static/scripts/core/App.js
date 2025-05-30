@@ -22,7 +22,7 @@ export default class App {
         // każda klasa może na nie odpowiedzieć, jeśli ustawi event this.bus.on("app:init", callback)
         this.bus.emit("app:init");
 
-        const data = { type: "xd" };
-        this.bus.emit("game:event", data);
+        // const data = { type: "xd" };
+        // this.bus.emit("game:event", data);
     }
 }
