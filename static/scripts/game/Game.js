@@ -33,6 +33,12 @@ export default class Game {
 
             this.camera.quaternion.setFromEuler(this.euler);
         })
+
+        // Odbiór informacji o kliknięciu lub zwolnieniu lewego lub prawego przycisku myszy
+        this.bus.on("movementController:mouseClick", (data) => {
+            this.mouseLeft = data.mouseLeft;
+            this.mouseRight = data.mouseRight;
+        })
     }
 
     // Generowanie sceny

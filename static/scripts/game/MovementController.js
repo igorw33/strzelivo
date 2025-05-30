@@ -10,6 +10,8 @@ export default class MovementController {
         this.moveLeft = false;
         this.moveBackward = false;
         this.moveRight = false;
+        this.mouseLeftClick = false;
+        this.mouseRightClick = false;
 
         // Mapowanie przycisków do nazw zmiennych
         this.keyMap = {
@@ -73,6 +75,38 @@ export default class MovementController {
                     this.bus.emit("movementController:mouseMove", data);
                 }
             });
+
+            // Wykrywanie LPM i PPMs
+            document.addEventListener("mousedown", (event) => {
+                if (event.button == 0) {
+                    this.mouseLeftClick = true;
+                    const data = { mouseLeft: this.mouseLeftClick, mouseRight: this.mouseRightClick };
+                    this.bus.emit("movementController:mouseClick", data);
+                } else if (event.button == 2) {
+                    this.mouseRightClick = true;
+                    const data = { mouseLeft: this.mouseLeftClick, mouseRight: this.mouseRightClick };
+                    this.bus.emit("movementController:mouseClick", data);
+                }
+            });
+
+            document.addEventListener("mouseup", (event) => {
+                if (event.button == 0) {
+                    this.mouseLeftClick = false;
+                    const data = { mouseLeft: this.mouseLeftClick, mouseRight: this.mouseRightClick };
+                    this.bus.emit("movementController:mouseClick", data);
+                } else if (event.button == 2) {
+                    this.mouseRightClick = false;
+                    const data = { mouseLeft: this.mouseLeftClick, mouseRight: this.mouseRightClick };
+                    this.bus.emit("movementController:mouseClick", data);
+                }
+            });
+
+            // Blokowanie menu dla PPM
+            document.addEventListener("contextmenu", (event) => {
+                event.preventDefault();
+            })
+
+
         })
     }
 }
