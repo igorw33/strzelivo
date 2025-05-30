@@ -1,19 +1,23 @@
 const WebSocket = require('ws');
 
+// moduł z EventBusem
+const { bus } = require("./EventBus");
+
 // prosty routing socketowy
+// w zasadzie jest niepotrzebny, bo w każdym przypadku odpala event, który leci do serwera :)
+// ale może dla przejrzystości...
 const handlers = {
-    'init': (ws, data) => {
-        /* tu wstaw funkcję, która waliduje dane gracza i rejestruje go w bazie */
-        console.log(data);
-        // data = {
-        //     type: 'spawn',
-        //     player: 'dxddd'
-        // }
-        // ws.send(JSON.stringify(data));
+    'login': (wss, ws, data) => {
+        bus.emit(data.type, data, ws, wss);
     },
 
-    'position': (ws, data) => {/* tu wstaw funkcję, która update'uje pozycję gracza */
+    'reconnect': (wss, ws, data) => {
         console.log(data);
+        bus.emit(data.type, data, ws, wss);
+    },
+
+    'sendPosition': (wss, ws, data) => {
+        bus.emit(data.type, data, ws, wss);
     },
 }
 
@@ -23,16 +27,15 @@ const setupWebSocket = (server) => {
         ws.on('message', (msg) => {
             // msg jest buforem hexowym, trzeba go sparsować do json-a
             const data = JSON.parse(msg);
-            handlers[data.type](ws, data);
+            handlers[data.type](wss, ws, data);
+
+            // UWAGA! Poniższa linia załatwia sprawę bez handlerów
+            // bus.emit(data.type, data, ws, wss);
+        })
+
+        ws.on('close', () => {
+            bus.emit('disconnect', ws);
         })
     })
-    /*
-    data.type to mniej więcej to samo co endpoint w REST API
-    
-    1. każdy klient przesyła info o swojej pozycji, przydałoby się co 50ms pewnie
-    data.type = 'position'
-    2. 
-    */
 }
-
 module.exports = { setupWebSocket };
