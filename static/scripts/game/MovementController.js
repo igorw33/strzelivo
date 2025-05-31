@@ -20,17 +20,28 @@ export default class MovementController {
             s: 'moveBackward',
             d: 'moveRight',
             escape: 'release',
-            p: 'lock'
+            p: 'lock',
+            tab: 'stats',
         };
     }
 
     setBusEvents = () => {
+
+        let tabPressed = false;
         this.bus.on("app:init", () => {
             console.log("klasa movementController gotowa");
 
             // Listenery kolejno wykrywające naciśnięcie przycisku i jego zwolnienie
             document.addEventListener('keydown', (event) => {
                 const action = this.keyMap[event.key.toLowerCase()];
+
+                tabPressed = action == 'stats';
+                if (tabPressed) {
+                    this.bus.emit('movementController:showStats');
+                    event.preventDefault();
+                    return;
+                }
+
                 if (action) {
                     // Blokowanie kursora przy naciśnięcu klawisza p, odblokowanie przy naciśnięciu escape
                     if (action == "release") {
@@ -54,6 +65,13 @@ export default class MovementController {
 
             document.addEventListener('keyup', (event) => {
                 const action = this.keyMap[event.key.toLowerCase()];
+
+                if (tabPressed) {
+                    this.bus.emit("movementController:hideStats");
+                    event.preventDefault();
+                    return;
+                }
+
                 if (action) {
                     this[action] = false;
 
@@ -65,7 +83,7 @@ export default class MovementController {
                     };
                     // Wysłanie info o przyciskach do Game.js
                     this.bus.emit("movementController:keyPress", data);
-                };
+                }
             });
 
             // Śledzenie ruchów kursora (konieczne do obracania kamerą)

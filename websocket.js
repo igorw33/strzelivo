@@ -16,6 +16,10 @@ const handlers = {
         bus.emit(data.type, data, ws, wss);
     },
 
+    'showStats': (wss, ws, data) => {
+        bus.emit(data.type, data, ws, wss);
+    },
+
     'sendPosition': (wss, ws, data) => {
         bus.emit(data.type, data, ws, wss);
     },

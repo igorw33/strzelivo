@@ -19,9 +19,8 @@ export default class Net {
 
         'login-success': (data) => {
             // zachowanie id gracza na wypadek rozłączenia
-            console.log(data);
-
             localStorage.setItem('playerID', data.player.id);
+            console.log('połączono z serwerem');
 
             this.bus.emit(`net:${data.type}`, data);
         },
@@ -32,6 +31,10 @@ export default class Net {
 
         'user-joined': (data) => {
             console.log(data);
+        },
+
+        'stats-success': (data) => {
+            this.bus.emit('net:showStats', data);
         },
 
         'reconnect-failed': (data) => {
@@ -63,6 +66,10 @@ export default class Net {
 
         this.bus.on("game:sendPosition", (data) => {
             this.send("sendPosition", data);
+        });
+
+        this.bus.on("movementController:showStats", () => {
+            this.send("showStats");
         });
     }
 

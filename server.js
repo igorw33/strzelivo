@@ -47,6 +47,7 @@ bus.on('login', (data, socket, wss) => {
         username: data.username || 'Anon',
         position: generatePlayerPosition() || { x: 0, y: 0, z: 0 },
         rotation: { x: 0, y: 0, z: 0 },
+        stats: { kills: Math.floor(Math.random() * 100), deaths: 0, assists: 0 },
         socket,
         connected: true,
         isAlive: true,
@@ -82,6 +83,7 @@ bus.on('disconnect', (ws) => {
 
 bus.on('reconnect', (data, ws, wss) => {
     const player = Players.getPlayer(data.playerID);
+
     if (!player) {
         return ws.send(JSON.stringify({
             type: 'reconnect-failed',
@@ -106,6 +108,21 @@ bus.on('reconnect', (data, ws, wss) => {
 
     broadcastExcept(ws, { type: 'user-joined', player: player.username }, wss);
 })
+
+bus.on('showStats', (data, socket, wss) => {
+    const stats = Players.getAllPlayers().map((player) => {
+        return { username: player.username, stats: player.stats };
+    });
+
+    stats.sort((a, b) => b.stats.kills - a.stats.kills);
+
+    console.log(stats);
+
+    socket.send(JSON.stringify({
+        type: 'stats-success',
+        stats
+    }))
+});
 
 bus.on('socket:sendPosition', (data, socket, wss) => {
     // pass
