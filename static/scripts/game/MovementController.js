@@ -13,6 +13,7 @@ export default class MovementController {
         this.mouseLeftClick = false;
         this.mouseRightClick = false;
         this.tabPressed = false;
+        this.jumped = false;
 
         // Mapowanie przycisków do nazw zmiennych
         this.keyMap = {
@@ -40,6 +41,12 @@ export default class MovementController {
                     this.tabPressed = true;
                     this.bus.emit('movementController:showStats');
                     event.preventDefault();
+                    return;
+                }
+                if (action == "jump" && this.jumped == false) {
+                    this.jumped = true;
+                    this.bus.emit('movementController:jump');
+                    return;
                 }
 
                 if (action) {
@@ -70,6 +77,7 @@ export default class MovementController {
                     this.tabPressed = false;
                     this.bus.emit("movementController:hideStats");
                     event.preventDefault();
+                    return;
                 }
 
                 if (action) {

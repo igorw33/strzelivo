@@ -6,10 +6,14 @@ export default class Game {
     constructor(bus) {
         this.bus = bus;
         this.setBusEvents();
+        this.clock = new THREE.Clock();
 
         this.rotationSpeed = Math.PI / 1080;
         // Współrzędna Y kamery, potrzebna do ruchu WASD (jak na razie na sztywno ustawiony ground level, potem będziemy jakoś to zmieniać dynamicznie)
         this.cameraHeight = 120;
+
+        // Wysokość, o jaką gracz może maksymalnie skoczyć (do ustalenia)
+        this.jumpHeight = 10;
     }
 
     setBusEvents = () => {
@@ -40,6 +44,11 @@ export default class Game {
         this.bus.on("movementController:mouseClick", (data) => {
             this.mouseLeft = data.mouseLeft;
             this.mouseRight = data.mouseRight;
+        })
+
+        // Odbiór informacji o skoku
+        this.bus.on("movementController:jump", () => {
+            this.jumpHandle(true);
         })
     }
 
@@ -123,5 +132,17 @@ export default class Game {
         //ciągłe renderowanie / wyświetlanie widoku sceny naszą kamerą
 
         this.renderer.render(this.scene, this.camera);
+    }
+
+    // Funkcja obliczająca prędkość gracza w osi Y w trakcie skoku (potem też prawdopodobnie w trakcie swobodnego opadania)
+    // Zmienna hasJumped będzie stosowana aby odróżnić czy gracz właśnie skoczył czy zeskoczył z czegoś bez wciskania spacji
+    jumpHandle = (hasJumped) => {
+        // Jutro nad tym siądę, nie mam dzisiaj pomysłu
+        // if (hasJumped) {
+        //     while (this.camera.position.y < this.cameraHeight + this.jumpHeight) {
+        //         this.camera.position.y += this.jumpVelocity;
+        //         console.log(this.camera.position.y)
+        //     }
+        // }
     }
 }
