@@ -8,6 +8,8 @@ export default class Game {
         this.setBusEvents();
 
         this.rotationSpeed = Math.PI / 1080;
+        // Współrzędna Y kamery, potrzebna do ruchu WASD (jak na razie na sztywno ustawiony ground level, potem będziemy jakoś to zmieniać dynamicznie)
+        this.cameraHeight = 120;
     }
 
     setBusEvents = () => {
@@ -29,7 +31,7 @@ export default class Game {
             this.euler.y -= data.movementX * this.rotationSpeed;
             this.euler.x -= data.movementY * this.rotationSpeed;
             this.euler.x = Math.min(Math.max(this.euler.x, -1.57079633), 1.57079633);
-            console.log(this.euler.x, this.euler.y)
+            // console.log(this.euler.x, this.euler.y)
 
             this.camera.quaternion.setFromEuler(this.euler);
         })
@@ -57,7 +59,7 @@ export default class Game {
         // this.camera.position.x = -200;
         // this.camera.position.y = 200;
         // this.camera.position.z = 200;
-        this.camera.position.set(0, 120, 60);
+        this.camera.position.set(0, this.cameraHeight, 60);
 
         // nakierowanie kamery na punkt (0,0,0) w przestrzeni (zakładamy, że istnieje już scena)
         this.camera.lookAt(this.scene.position);
@@ -100,18 +102,22 @@ export default class Game {
         if (this.moveForward) {
             // camera.translateZ(-moveSpeed * delta);
             this.camera.translateZ(-4);
+            this.camera.position.y = this.cameraHeight;
         }
         if (this.moveBackward) {
             // camera.translateZ(moveSpeed * delta);
             this.camera.translateZ(4);
+            this.camera.position.y = this.cameraHeight;
         }
         if (this.moveLeft) {
             // camera.translateX(-moveSpeed * delta);
             this.camera.translateX(-4);
+            this.camera.position.y = this.cameraHeight;
         }
         if (this.moveRight) {
             // camera.translateX(moveSpeed * delta);
             this.camera.translateX(4);
+            this.camera.position.y = this.cameraHeight;
         }
 
         //ciągłe renderowanie / wyświetlanie widoku sceny naszą kamerą

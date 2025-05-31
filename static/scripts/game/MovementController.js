@@ -12,6 +12,7 @@ export default class MovementController {
         this.moveRight = false;
         this.mouseLeftClick = false;
         this.mouseRightClick = false;
+        this.tabPressed = false;
 
         // Mapowanie przycisków do nazw zmiennych
         this.keyMap = {
@@ -22,12 +23,12 @@ export default class MovementController {
             escape: 'release',
             p: 'lock',
             tab: 'stats',
+            ' ': 'jump'
         };
     }
 
     setBusEvents = () => {
 
-        let tabPressed = false;
         this.bus.on("app:init", () => {
             console.log("klasa movementController gotowa");
 
@@ -35,11 +36,10 @@ export default class MovementController {
             document.addEventListener('keydown', (event) => {
                 const action = this.keyMap[event.key.toLowerCase()];
 
-                tabPressed = action == 'stats';
-                if (tabPressed) {
+                if (action == "stats") {
+                    this.tabPressed = true;
                     this.bus.emit('movementController:showStats');
                     event.preventDefault();
-                    return;
                 }
 
                 if (action) {
@@ -66,10 +66,10 @@ export default class MovementController {
             document.addEventListener('keyup', (event) => {
                 const action = this.keyMap[event.key.toLowerCase()];
 
-                if (tabPressed) {
+                if (action == "stats") {
+                    this.tabPressed = false;
                     this.bus.emit("movementController:hideStats");
                     event.preventDefault();
-                    return;
                 }
 
                 if (action) {
