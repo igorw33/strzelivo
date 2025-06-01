@@ -1,6 +1,7 @@
 export default class Net {
     socket;
     bus;
+    MIN_STATS_REQUEST_TIME = 1000;
     // na serwerze jest ruter, tu będzie odwrotność
     // jeżeli klient wysyła dane:
     // używa metody send(TYP!!!, dane) -> dane lecą na serwer -> tam są odbierane, wykonywana jest metoda z handlers(data.type)
@@ -19,7 +20,7 @@ export default class Net {
 
         'login-success': (data) => {
             // zachowanie id gracza na wypadek rozłączenia
-            localStorage.setItem('playerID', data.player.id);
+            sessionStorage.setItem('playerID', data.player.id);
             console.log('połączono z serwerem');
 
             this.bus.emit(`net:${data.type}`, data);
@@ -34,13 +35,14 @@ export default class Net {
         },
 
         'stats-success': (data) => {
+            this.lastStats = data;
             this.bus.emit('net:showStats', data);
         },
 
         'reconnect-failed': (data) => {
             console.log('nieudana próba ponownego połączenia: przekroczono czas');
 
-            localStorage.removeItem('playerID');
+            sessionStorage.removeItem('playerID');
         }
     };
 
@@ -53,6 +55,7 @@ export default class Net {
 
     setupBusEvents = () => {
         // tu wszystkie this.bus.on(event, callbacks)
+        let lastStatsFetch = 0;
 
         this.bus.on("app:init", () => {
             console.log("klasa net gotowa");
@@ -69,7 +72,15 @@ export default class Net {
         });
 
         this.bus.on("movementController:showStats", () => {
-            this.send("showStats");
+            const now = Date.now();
+
+            // żeby nie szło zbyt dużo zapytań do serwera, to:
+            if (now - lastStatsFetch > this.MIN_STATS_REQUEST_TIME || !this.lastStats) {
+                this.send("showStats");
+                lastStatsFetch = now;
+            } else {
+                this.bus.emit('net:showStats', this.lastStats);
+            }
         });
     }
 
