@@ -98,7 +98,7 @@ export default class Net {
             // wychodzi na to, że socket potrzebuje mniej więcej 300ms od otwarcia strony, żeby się połączyć
             // console.log("czas połączenia:", event.timeStamp);
             console.log("socket się połączył");
-            const id = localStorage.getItem('playerID');
+            const id = sessionStorage.getItem('playerID');
 
 
             if (id != 'undefined' && id != undefined) {
