@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 export default class Game {
     bus;
@@ -10,7 +11,7 @@ export default class Game {
 
         this.rotationSpeed = Math.PI / 1080;
         // Współrzędna Y kamery, potrzebna do ruchu WASD (jak na razie na sztywno ustawiony ground level, potem będziemy jakoś to zmieniać dynamicznie)
-        this.cameraHeight = 120;
+        this.cameraHeight = 10;
 
         // Wysokość, o jaką gracz może maksymalnie skoczyć (do ustalenia)
         this.jumpHeight = 10;
@@ -55,6 +56,7 @@ export default class Game {
     // Generowanie sceny
     generateScene = () => {
         this.scene = new THREE.Scene();
+
         this.camera = new THREE.PerspectiveCamera(
             45,    // kąt patrzenia kamery (FOV - field of view)
             screen.width / screen.height,    // proporcje widoku, powinny odpowiadać proporcjom ekranu przeglądarki użytkownika
@@ -72,14 +74,84 @@ export default class Game {
 
         // nakierowanie kamery na punkt (0,0,0) w przestrzeni (zakładamy, że istnieje już scena)
         this.camera.lookAt(this.scene.position);
+
         this.euler = new THREE.Euler().setFromQuaternion(this.camera.quaternion, 'YXZ');
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 1);
+        this.scene.add(ambientLight);
 
         // Generowanie przykładowego elementu
         // Geometria: szerokość, wysokość, głębokość
         this.geometry = new THREE.BoxGeometry(100, 10, 20);
         this.material = new THREE.MeshBasicMaterial({ color: 0x00ff00, });
         this.cube = new THREE.Mesh(this.geometry, this.material);
-        this.scene.add(this.cube);
+        // this.scene.add(this.cube);
+
+
+        // Poniżej wczytanie mapy i modelu gracza
+        // Przenieś to sobie, Igor
+
+        // this.collisionMeshes = [];
+
+        // const loader = new GLTFLoader();
+        // loader.load(
+        //     '../models/dust2_map.glb',
+        //     (glb) => {
+        //         console.log(glb);
+        //         // czynnik skali, do zastanowienia, czy w ogóle
+        //         // może lepiej zmniejszyć wszystko pozostałe
+        //         const scaleFactor = 1;
+        //         this.model = glb.scene;
+
+        //         // 1008 i 1232 to współrzędne mapy XD tak jakoś dziwnie ten model jest 
+        //         this.model.position.set(0, scaleFactor * -1008, scaleFactor * -1232);
+        //         this.model.scale.set(scaleFactor, scaleFactor, scaleFactor);
+        //         console.log(this.camera.position, this.model.position);
+
+        //         // załadowanie ścian modelu mapy?
+        //         glb.scene.traverse((child) => {
+        //             if (child.isMesh) {
+        //                 this.collisionMeshes.push(child);
+        //                 // (Opcjonalnie) wyłącz cienie lub inne efekty
+        //             }
+        //         });
+
+        //         this.scene.add(this.model);
+        //     },
+        //     function (xhr) {
+        //         console.log((xhr.loaded / xhr.total) * 100 + "% loaded");
+        //     },
+        //     function (error) {
+        //         console.log("An error happened:", error);
+        //     }
+        // )
+
+        // loader.load(
+        //     '../models/player.glb',
+        //     (glb) => {
+        //         console.log(glb);
+        //         this.model = glb.scene;
+        //         console.log(this.camera.position, this.model.position);
+
+        //         glb.scene.traverse((child) => {
+        //             if (child.isMesh) {
+        //                 this.collisionMeshes.push(child);
+        //                 // (Opcjonalnie) wyłącz cienie lub inne efekty
+        //             }
+        //         });
+
+        //         this.scene.add(this.model);
+        //     },
+        //     function (xhr) {
+        //         console.log((xhr.loaded / xhr.total) * 100 + "% loaded");
+        //     },
+        //     function (error) {
+        //         console.log("An error happened:", error);
+        //     }
+        // )
+        // 
+
+
 
         // Generowanie podłogi
         // this.floorGeometry = new THREE.PlaneGeometry(10000, 10000, 1, 1);
@@ -103,34 +175,36 @@ export default class Game {
 
         //w tym miejscu ustalamy wszelkie zmiany w projekcie (obrót, skalę, położenie obiektów)
         //np zmieniająca się wartość rotacji obiektu
+
         //wykonywanie funkcji bez końca, ok 60 fps jeśli pozwala na to wydajność maszyny
-
         requestAnimationFrame(this.render);
-
+        const speed = 1;
         // Ruch kamery na podstawie naciśniętych przycisków
         if (this.moveForward) {
             // camera.translateZ(-moveSpeed * delta);
-            this.camera.translateZ(-4);
+            this.camera.translateZ(-speed);
             this.camera.position.y = this.cameraHeight;
         }
         if (this.moveBackward) {
             // camera.translateZ(moveSpeed * delta);
-            this.camera.translateZ(4);
+            this.camera.translateZ(speed);
             this.camera.position.y = this.cameraHeight;
         }
         if (this.moveLeft) {
             // camera.translateX(-moveSpeed * delta);
-            this.camera.translateX(-4);
+            this.camera.translateX(-speed);
             this.camera.position.y = this.cameraHeight;
         }
         if (this.moveRight) {
             // camera.translateX(moveSpeed * delta);
-            this.camera.translateX(4);
+            this.camera.translateX(speed);
             this.camera.position.y = this.cameraHeight;
         }
 
         //ciągłe renderowanie / wyświetlanie widoku sceny naszą kamerą
-
+        // if (this.model) {
+        //     this.model.position.y -= 0.5;
+        // }
         this.renderer.render(this.scene, this.camera);
     }
 
