@@ -36,8 +36,11 @@ body {
 }
 
 .hud-username-bar {
+    user-select: none;
+    pointer-events: none;
+    cursor: default;
     overflow: hidden;
-    color: black;
+    color: lightgreen;
     font-size: 30px;
     display: flex;
     align-items: center;
@@ -65,4 +68,17 @@ body {
 
 table {
     border-spacing: 0;
+}
+
+.crosshair {
+    overflow: hidden;
+    background-image: url('../images/crosshair.png');
+    background-repeat: no-repeat;
+    background-size: contain;
+    width: 30px;
+    height: 30px;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translateY(-50%) translateX(-50%);
 }

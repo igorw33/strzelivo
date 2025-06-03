@@ -68,6 +68,9 @@ export default class Ui {
         })
 
         document.body.appendChild(this.container);
+
+        // można ewentualnie wymusić focusa na inpucie
+        // input.focus();
     }
 
     sendUserData = () => {
@@ -89,7 +92,7 @@ export default class Ui {
 
         this.usernameContainer = document.createElement("div");
         this.usernameContainer.classList.add('hud-username-bar');
-        this.usernameContainer.innerHTML = playerData.username;
+        this.usernameContainer.innerHTML = `nickname: ${playerData.username}`;
 
         // pasek dolny: hp, minimapa?
         this.lowerBarContainer = document.createElement("div");
@@ -99,12 +102,19 @@ export default class Ui {
         const hpBar = this.createHpBar(playerData.hp);
         this.lowerBarContainer.append(hpBar);
 
-        document.body.append(this.usernameContainer, this.lowerBarContainer);
+
+        // celownik
+        this.crosshair = document.createElement('div');
+        this.crosshair.classList.add('crosshair');
+
+        document.body.append(this.usernameContainer, this.lowerBarContainer, this.crosshair);
 
         // set HP to full
         this.setHpBar(playerData.hp);
 
         // minimapa? to do
+
+
     }
 
     createHpBar = (hp) => {
@@ -132,6 +142,12 @@ export default class Ui {
 
     // STATY
     showStats = (data) => {
+        /*
+            wynikiem jest tabela:
+            nick | kills | deaths | assists
+
+            posortowana po killach (serwer sortuje)
+        */
         if (this.statsContainer != null) return;
         this.statsContainer = document.createElement("div");
         this.statsContainer.id = 'stats-container';
@@ -185,6 +201,8 @@ export default class Ui {
     }
 
     hideStats = () => {
+        if (this.statsContainer == undefined) return;
+
         this.statsContainer.remove();
         this.statsContainer = null;
     }
