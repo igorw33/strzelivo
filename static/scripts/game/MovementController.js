@@ -80,6 +80,11 @@ export default class MovementController {
                     return;
                 }
 
+                if (action == "jump" && this.jumped == true) {
+                    this.jumped = false;
+                    return;
+                }
+
                 if (action) {
                     this[action] = false;
 
