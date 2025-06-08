@@ -13,13 +13,13 @@ export default class Game {
         // Ile Y nad podłogą jest kamera
         this.cameraHeight = 0.5;
         // Startowa wysokość kamery
-        this.currentCam = 1009;
+        this.currentCam = 1009.5;
 
         // Wysokość, o jaką gracz może maksymalnie skoczyć (do ustalenia)
         this.jumpHeight = 1;
 
         // Czy gracz jest na ziemi
-        this.onGround = true;
+        this.onGround = false;
     }
 
     setBusEvents = () => {
@@ -56,10 +56,16 @@ export default class Game {
         this.bus.on("movementController:jump", () => {
             this.jumpHandle(true);
         })
+
+        // Odbiór informacji o meshach
+        // this.bus.on("modelController:sendMeshes", (data) => {
+        //     this.collisionMeshes = data.collisionMeshes;
+        //     console.log("odebrano meshe")
+        // })
     }
 
     // Generowanie sceny
-    generateScene = () => {
+    generateScene = async () => {
         this.scene = new THREE.Scene();
 
         this.camera = new THREE.PerspectiveCamera(
@@ -73,6 +79,8 @@ export default class Game {
         this.renderer.setSize(screen.width, screen.height);
         document.getElementById("root").append(this.renderer.domElement);
         this.camera.position.set(4, this.currentCam, 1230);
+        // Potrzebne do sprawdzania czy gracz nie wchodzi w ścianę
+        this.oldCamPos = this.camera.position.clone();
 
         // nakierowanie kamery na punkt (0,0,0) w przestrzeni (zakładamy, że istnieje już scena)
         //this.camera.lookAt(this.scene.position);
@@ -83,91 +91,16 @@ export default class Game {
         // Detekcja obiektów, które są od 0 do tyle unitów, ile ustawiłem w this.cameraHeight od niego
         this.raycaster = new THREE.Raycaster(new THREE.Vector3(this.camera.position), new THREE.Vector3(0, - 1, 0), 0, this.cameraHeight);
 
+        // Raycaster, który będzie kontrolował czy gracz wchodzi w ścianę (ustawiony na pozycji głowy (kamery))
+        this.wallRaycaster = new THREE.Raycaster();
+        // Raycaster, który będzie kontrolował czy gracz wchodzi w ścianę (ustawiony na pozycji stóp)
+        // this.wallRaycaster2 = new THREE.Raycaster();
+
         const ambientLight = new THREE.AmbientLight(0xffffff, 1);
         this.scene.add(ambientLight);
 
-        // Generowanie przykładowego elementu
-        // Geometria: szerokość, wysokość, głębokość
-        this.geometry = new THREE.BoxGeometry(100, 10, 20);
-        this.material = new THREE.MeshBasicMaterial({ color: 0x00ff00, });
-        this.cube = new THREE.Mesh(this.geometry, this.material);
-        // this.scene.add(this.cube);
-
-
-        // Poniżej wczytanie mapy i modelu gracza
-        // Przenieś to sobie, Igor
-
-        this.collisionMeshes = [];
-
-        const loader = new GLTFLoader();
-        loader.load(
-            '../models/dust2_map.glb',
-            (glb) => {
-                console.log(glb);
-                // czynnik skali, do zastanowienia, czy w ogóle
-                // może lepiej zmniejszyć wszystko pozostałe
-                const scaleFactor = 1;
-                this.model = glb.scene;
-
-                // 1008 i 1232 to współrzędne mapy XD tak jakoś dziwnie ten model jest
-                // Zostawmy linijkę tą zakomentowaną i działajmy na tych dziwnych kordach
-                // Nie umiem zrobić żeby meshe działały na zmienionych kordach
-                // this.model.position.set(0, scaleFactor * -1008, scaleFactor * -1232);
-                this.model.scale.set(scaleFactor, scaleFactor, scaleFactor);
-                console.log(this.camera.position, this.model.position);
-
-                // załadowanie ścian modelu mapy?
-                glb.scene.traverse((child) => {
-                    if (child.isMesh) {
-                        this.collisionMeshes.push(child);
-                        // (Opcjonalnie) wyłącz cienie lub inne efekty
-                    }
-                });
-
-                this.scene.add(this.model);
-            },
-            function (xhr) {
-                console.log((xhr.loaded / xhr.total) * 100 + "% loaded");
-            },
-            function (error) {
-                console.log("An error happened:", error);
-            }
-        )
-
-        // loader.load(
-        //     '../models/player.glb',
-        //     (glb) => {
-        //         console.log(glb);
-        //         this.model = glb.scene;
-        //         console.log(this.camera.position, this.model.position);
-
-        //         glb.scene.traverse((child) => {
-        //             if (child.isMesh) {
-        //                 this.collisionMeshes.push(child);
-        //                 // (Opcjonalnie) wyłącz cienie lub inne efekty
-        //             }
-        //         });
-
-        //         this.scene.add(this.model);
-        //     },
-        //     function (xhr) {
-        //         console.log((xhr.loaded / xhr.total) * 100 + "% loaded");
-        //     },
-        //     function (error) {
-        //         console.log("An error happened:", error);
-        //     }
-        // )
-        // 
-
-
-
-        // Generowanie podłogi
-        // this.floorGeometry = new THREE.PlaneGeometry(10000, 10000, 1, 1);
-        // this.floorMaterial = new THREE.MeshBasicMaterial({ color: 0xcccccc });
-        // this.floor = new THREE.Mesh(this.floorGeometry, this.floorMaterial)
-        // this.floor.material.side = THREE.DoubleSide
-        // this.floor.rotation.x = 90 * Math.PI / 180
-        // this.scene.add(this.floor)
+        // Wczytanie modelu mapy
+        await this.loadMap();
 
         // Pomocnicze osie - można zakomentować/odkomentować (czerwona: x, żółta: y, niebieska: z)
         this.axes = new THREE.AxesHelper(1000)
@@ -184,21 +117,33 @@ export default class Game {
 
         // Sprawdzenie czy gracz na czymś stoi
         const intersections = this.raycaster.intersectObjects(this.collisionMeshes, false);
+        // console.log(intersections)
         const onObject = intersections.length > 0;
 
         // Jak stoi to ok, jak nie to "spada" - do poprawy, na razie jest hardcoded -0.025 ale będzie bardziej "fizycznie"
         if (onObject) {
-            console.log('On ground');
-            if (!this.onGround) {
+            const camAboveMeshHeight = this.camera.position.y - intersections[0].point.y;
+            // console.log(this.camera.position.y - intersections[0].point.y)
+            if (camAboveMeshHeight <= 0.8) {
                 this.onGround = true;
-            }
-        } else {
-            console.log('In air');
-            this.camera.position.y -= 0.025;
-            this.currentCam = this.camera.position.y;
-            if (this.onGround) {
+                // console.log('On ground');
+            } else {
                 this.onGround = false;
             }
+        }
+        if (!this.onGround || !onObject) {
+            // console.log('In air');
+            if (onObject) {
+                if (this.camera.position.y - intersections[0].point.y <= 0.825) {
+                    this.camera.position.y = intersections[0].point.y + 0.8;
+                } else {
+                    this.camera.position.y -= 0.025;
+                }
+            } else {
+                this.camera.position.y -= 0.025;
+            }
+            this.currentCam = this.camera.position.y;
+            this.onGround = false;
         }
 
         //wykonywanie funkcji bez końca, ok 60 fps jeśli pozwala na to wydajność maszyny
@@ -209,27 +154,49 @@ export default class Game {
         this.camera.getWorldDirection(direction);
         direction.y = 0;
         direction.normalize();
-        // Ruch kamery na podstawie naciśniętych przycisków
-        if ((this.moveForward && this.moveLeft) || (this.moveForward && this.moveRight) || (this.moveBackward && this.moveLeft) || (this.moveBackward && this.moveRight)) {
-            speed = speed / Math.sqrt(2);
-        }
-        if (this.moveForward) {
-            // camera.translateZ(-moveSpeed * delta);
-            this.camera.position.addScaledVector(direction, speed);
-        }
-        if (this.moveBackward) {
-            // camera.translateZ(moveSpeed * delta);
-            this.camera.position.addScaledVector(direction, -speed);
-        }
-
         const strafeDirection = new THREE.Vector3();
         strafeDirection.crossVectors(this.camera.up, direction).normalize();
-        if (this.moveLeft) {
-            this.camera.position.addScaledVector(strafeDirection, speed);
+
+        const moveVector = new THREE.Vector3();
+        if (this.moveForward) moveVector.add(direction);
+        if (this.moveBackward) moveVector.addScaledVector(direction, -1);
+        if (this.moveLeft) moveVector.add(strafeDirection);
+        if (this.moveRight) moveVector.addScaledVector(strafeDirection, -1);
+
+        // Ruch kamery na podstawie naciśniętych przycisków, z uwzględnieniem kolizji ścian (na razie tylko na poziomie głowy)
+        if (moveVector.lengthSq() > 0) {
+            moveVector.normalize();
+
+            // Przewidywanie nowej pozycji, dla niej sprawdzane jest czy gracz może się ruszyć
+            const proposedPosition = this.camera.position.clone().addScaledVector(moveVector, speed);
+
+            this.wallRaycaster.set(this.camera.position, moveVector);
+
+            this.wallRaycaster.far = speed + 0.5; // 0.5 to jest jak blisko do ściany może być kamera
+
+            const intersects = this.wallRaycaster.intersectObjects(this.collisionMeshes, true);
+
+            if (intersects.length === 0) {
+                this.camera.position.copy(proposedPosition);
+            } else {
+                console.log('Wall collision detected');
+            }
         }
-        if (this.moveRight) {
-            this.camera.position.addScaledVector(strafeDirection, -speed);
-        }
+        // if (this.moveForward) {
+        //     // camera.translateZ(-moveSpeed * delta);
+        //     this.camera.position.addScaledVector(direction, speed);
+        // }
+        // if (this.moveBackward) {
+        //     // camera.translateZ(moveSpeed * delta);
+        //     this.camera.position.addScaledVector(direction, -speed);
+        // }
+
+        // if (this.moveLeft) {
+        //     this.camera.position.addScaledVector(strafeDirection, speed);
+        // }
+        // if (this.moveRight) {
+        //     this.camera.position.addScaledVector(strafeDirection, -speed);
+        // }
 
         this.camera.position.y = this.currentCam;
 
@@ -241,7 +208,26 @@ export default class Game {
     // Na razie jest hardcoded wartość, ale będzie jakiś wzór na to
     jumpHandle = (hasJumped) => {
         if (this.onGround && hasJumped) {
+            // console.log("Should jump")
             this.camera.position.y += this.jumpHeight;
+            this.onGround = false;
         }
+    }
+
+    // Funkcja pomocnicza to ładowania modelu mapy
+    loadMap = async () => {
+        const data = { scene: this.scene };
+
+        const meshes = await new Promise((resolve) => {
+            const handler = (dataFromModelController) => {
+                resolve(dataFromModelController.collisionMeshes);
+            };
+
+            this.bus.on('modelController:sendMeshes', handler);
+
+            this.bus.emit('game:loadMap', data);
+        });
+
+        this.collisionMeshes = meshes;
     }
 }
