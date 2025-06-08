@@ -94,7 +94,9 @@ export default class Game {
         // Raycaster, który będzie kontrolował czy gracz wchodzi w ścianę (ustawiony na pozycji głowy (kamery))
         this.wallRaycaster = new THREE.Raycaster();
         // Raycaster, który będzie kontrolował czy gracz wchodzi w ścianę (ustawiony na pozycji stóp)
-        // this.wallRaycaster2 = new THREE.Raycaster();
+        this.wallRaycaster2 = new THREE.Raycaster();
+        // Raycaster, który będzie kontrolował czy gracz wchodzi po rampie
+        this.wallRaycaster3 = new THREE.Raycaster();
 
         const ambientLight = new THREE.AmbientLight(0xffffff, 1);
         this.scene.add(ambientLight);
@@ -168,16 +170,29 @@ export default class Game {
             moveVector.normalize();
 
             // Przewidywanie nowej pozycji, dla niej sprawdzane jest czy gracz może się ruszyć
-            const proposedPosition = this.camera.position.clone().addScaledVector(moveVector, speed);
+            const newPosition = this.camera.position.clone().addScaledVector(moveVector, speed);
 
             this.wallRaycaster.set(this.camera.position, moveVector);
+            this.wallRaycaster2.set(this.camera.position, moveVector);
+            this.wallRaycaster3.set(this.camera.position, moveVector);
 
             this.wallRaycaster.far = speed + 0.5; // 0.5 to jest jak blisko do ściany może być kamera
+            this.wallRaycaster2.far = speed + 0.5;
+            this.wallRaycaster3.far = speed + 0.5;
+            this.wallRaycaster2.ray.origin.y -= 0.75; // Chcemy żeby raycaster był u stóp gracza
+            this.wallRaycaster3.ray.origin.y -= 0.3; // Chcemy żeby raycaster był na wysokości, która określa czy gracz wchodzi na rampę
 
             const intersects = this.wallRaycaster.intersectObjects(this.collisionMeshes, true);
+            const intersects2 = this.wallRaycaster2.intersectObjects(this.collisionMeshes, true);
+            const intersects3 = this.wallRaycaster3.intersectObjects(this.collisionMeshes, true);
 
-            if (intersects.length === 0) {
-                this.camera.position.copy(proposedPosition);
+            if (intersects.length == 0 && intersects2.length == 0 && intersects3.length == 0) {
+                this.camera.position.copy(newPosition);
+            } else if (intersects.length == 0 && intersects2.length != 0 && intersects3.length == 0) {
+                this.camera.position.copy(newPosition);
+                this.camera.position.y = intersects2[0].point.y + 0.8;
+                this.currentCam = this.camera.position.y;
+                console.log("Walking up the ramp")
             } else {
                 console.log('Wall collision detected');
             }
@@ -197,8 +212,8 @@ export default class Game {
         // if (this.moveRight) {
         //     this.camera.position.addScaledVector(strafeDirection, -speed);
         // }
-
         this.camera.position.y = this.currentCam;
+        // console.log(this.currentCam)
 
         this.renderer.render(this.scene, this.camera);
     }
