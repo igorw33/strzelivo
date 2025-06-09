@@ -19,6 +19,7 @@ export default class Net {
         },
 
         'login-success': (data) => {
+            // data => {type, player, other};
             // zachowanie id gracza na wypadek rozłączenia
             sessionStorage.setItem('playerID', data.player.id);
             console.log('połączono z serwerem');
@@ -28,6 +29,7 @@ export default class Net {
 
         'login-failed': (data) => {
             this.bus.emit(`net:${data.type}`, data);
+            sessionStorage.removeItem('playerID');
         },
 
         'user-joined': (data) => {

@@ -28,6 +28,20 @@ export default class Game {
             this.generateScene();
         })
 
+        this.bus.on("net:login-success", (data) => {
+            // z serwera klient dostaje losowego spawnpointa
+            // i rotację, na razie {0,0,0}
+            const position = data.player.position;
+            const rotation = data.player.rotation;
+
+            this.camera.position.set(position.x, position.y, position.z);
+            this.camera.rotation.set(rotation.x, rotation.y, rotation.z);
+            this.oldCamPos = this.camera.position.clone();
+
+            // od razu pointerlock
+            document.body.requestPointerLock();
+        })
+
         // Odbiór informacji o wciśniętym bądź zwolnionym przycisku
         this.bus.on("movementController:keyPress", (data) => {
             this.moveForward = data.moveForward;
@@ -188,8 +202,11 @@ export default class Game {
 
             if (intersects.length == 0 && intersects2.length == 0 && intersects3.length == 0) {
                 this.camera.position.copy(newPosition);
+                console.log(newPosition);
             } else if (intersects.length == 0 && intersects2.length != 0 && intersects3.length == 0) {
                 this.camera.position.copy(newPosition);
+                console.log(newPosition);
+
                 this.camera.position.y = intersects2[0].point.y + 0.8;
                 this.currentCam = this.camera.position.y;
                 console.log("Walking up the ramp")
