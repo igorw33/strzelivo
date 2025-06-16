@@ -45,6 +45,13 @@ export default class Net {
             console.log('nieudana próba ponownego połączenia: przekroczono czas');
 
             sessionStorage.removeItem('playerID');
+        },
+
+        // odebranie pozycji graczy
+        'player-positions': (data) => {
+            // data = {type, playerPositions:[{username, position}...]}
+            console.log(data.playersPositions.map((pos) => { return pos.position }));
+            this.bus.emit('net:updatePositions', data.playersPositions)
         }
     };
 
@@ -70,7 +77,17 @@ export default class Net {
         });
 
         this.bus.on("game:sendPosition", (data) => {
-            this.send("sendPosition", data);
+            // poprosiłbym dane w formacie:
+            // data = {x,y,z};
+            // Dzięki! Kacper
+            const id = sessionStorage.getItem('playerID');
+
+            // jeśli niezalogowany, wypad
+            if (id == null) return;
+
+            // Wysyłamy pozycję do serwera
+            const position = { position: data, id: id };
+            this.send("sendPosition", position);
         });
 
         this.bus.on("movementController:showStats", () => {

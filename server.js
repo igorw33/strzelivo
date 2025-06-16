@@ -21,7 +21,6 @@ const { bus } = require("./EventBus");
 // moduł z hashmapą <socket,player>
 const Players = require('./players');
 const spawnpoints = require('./spawnpoints');
-const { connected } = require("process");
 
 // mapa socketów graczy: <playerID, socket>
 const sockets = new Map();
@@ -30,6 +29,7 @@ const ids = new Map();
 
 const MAX_USERNAME_LENGTH = 30;
 const MAX_DISCONNECT_TIME = 10000; // ms
+const POSITION_UPDATE_INTERVAL = 50; //ms
 
 bus.on('login', (data, socket, wss) => {
     // data = {username:username}
@@ -51,7 +51,7 @@ bus.on('login', (data, socket, wss) => {
 
     const playerData = {
         id: generatePlayerID(),
-        username: data.username || 'Anon',
+        username: data.username || generateAnonName(),
         position: generatePlayerPosition() || { x: 4, y: 1009, z: 1232 }, // to drugie to środek mapy, jest też w spawnpointach
         rotation: { x: 0, y: 0, z: 0 },
         stats: { kills: 0, deaths: 0, assists: 0 },
@@ -146,7 +146,7 @@ bus.on('reconnect', (data, ws, wss) => {
             connected: o.connected,
             isAlive: o.isAlive,
             hp: o.hp
-            // pomijamy setinterval
+            // pomijamy setinterval, bo generuje problemy cirkulacji XD
         }
     })
 
@@ -166,7 +166,7 @@ bus.on('showStats', (data, socket, wss) => {
 
     stats.sort((a, b) => b.stats.kills - a.stats.kills);
 
-    console.log(stats);
+    // console.log(stats);
 
     socket.send(JSON.stringify({
         type: 'stats-success',
@@ -174,9 +174,33 @@ bus.on('showStats', (data, socket, wss) => {
     }))
 });
 
-bus.on('socket:sendPosition', (data, socket, wss) => {
-    // pass
+bus.on('sendPosition', (data, socket, wss) => {
+    // data => {id, position:{x,y,z}}
+    const id = data.id;
+    const player = Players.getPlayer(id);
+    // console.log("nowa pozycja gracza:", data.position);
+    // console.log("stara pozycja gracza", player.position);
+
+    // tu ewentualnie sprawdzanie, czy gracz nie chodzi zbyt szybko
+
+    player.position = data.position;
 });
+
+
+// wysyłanie pozycji wszystkich graczy co POSITION_UPDATE_INTERVAL milisekund
+const positionInterval = setInterval(() => {
+    // robimy tablicę socketów
+    const wss = Array.from(sockets.values());
+
+    // wyciągamy tylko username'a i pozycję
+    const playersPositions = Players.getAllPlayers().map((p) => {
+        return { username: p.username, position: p.position };
+    });
+
+    broadcast({ type: 'player-positions', playersPositions }, wss);
+}, POSITION_UPDATE_INTERVAL);
+
+
 
 function broadcastExcept(excluded, msg, wss) {
     for (const client of wss.clients) {
@@ -186,10 +210,55 @@ function broadcastExcept(excluded, msg, wss) {
     }
 }
 
+function broadcast(msg, wss) {
+    if (wss.length < 2) {
+        // nie ma sensu broadcastować dla single playera
+        return;
+    }
+
+    for (const client of wss) {
+        client.send(JSON.stringify(msg));
+    }
+}
+
 function generatePlayerID() {
     return 'p' + Math.random().toString(36).slice(2, 11);
 }
 
+function generateAnonName() {
+    return 'Anon' + Math.random().toString(36).slice(2, 11);
+}
+
 function generatePlayerPosition() {
-    return spawnpoints.list[Math.floor(Math.random() * spawnpoints.list.length)];
+    const players = Players.getAllPlayers();
+    const spawns = spawnpoints.list;
+
+    // jeśli 0 graczy, losowy spawnpoint
+    if (players.length === 0) {
+        return spawns[Math.floor(Math.random() * spawns.length)];
+    }
+
+    // jeśli więcej graczy:
+    // wybieranie spawnpointu, w okolicy którego jest najmniej graczy
+    // liczymy sumę odległości graczy od spawna
+    // wybieramy spawn o największej sumie
+    let mostDistant = spawns[0];
+    let maxDistance = 0;
+    for (const spawn in spawns) {
+        let distance = 0;
+
+        // Obliczanie sumy dystansów spawnpoint-players
+        for (const player of players) {
+            const playerPosition = player.position;
+            distance += Math.sqrt(Math.pow((playerPosition.x - spawn.x), 2) + Math.pow((playerPosition.y - spawn.y), 2) + Math.pow((playerPosition.z - spawn.z), 2));
+        }
+
+        // Aktualizacja najdalszego spawna
+        if (maxDistance < distance) {
+            maxDistance = distance;
+            mostDistant = spawn;
+        }
+    }
+
+    return mostDistant;
 }

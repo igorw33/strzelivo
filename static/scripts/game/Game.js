@@ -8,6 +8,7 @@ export default class Game {
         this.bus = bus;
         this.setBusEvents();
         this.clock = new THREE.Clock();
+        this.frame = 0;
 
         this.rotationSpeed = Math.PI / 1500;
         // Ile Y nad podłogą jest kamera
@@ -202,11 +203,8 @@ export default class Game {
 
             if (intersects.length == 0 && intersects2.length == 0 && intersects3.length == 0) {
                 this.camera.position.copy(newPosition);
-                console.log(newPosition);
             } else if (intersects.length == 0 && intersects2.length != 0 && intersects3.length == 0) {
                 this.camera.position.copy(newPosition);
-                console.log(newPosition);
-
                 this.camera.position.y = intersects2[0].point.y + 0.8;
                 this.currentCam = this.camera.position.y;
                 console.log("Walking up the ramp")
@@ -231,6 +229,13 @@ export default class Game {
         // }
         this.camera.position.y = this.currentCam;
         // console.log(this.currentCam)
+
+        // wysyłanie pozycji do serwera co 3 klatki (~50ms)
+        if (this.frame % 3 == 0) {
+            this.bus.emit('game:sendPosition', this.camera.position);
+        }
+        this.frame++;
+
 
         this.renderer.render(this.scene, this.camera);
     }
