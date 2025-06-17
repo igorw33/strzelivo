@@ -30,6 +30,7 @@ const ids = new Map();
 const MAX_USERNAME_LENGTH = 30;
 const MAX_DISCONNECT_TIME = 10000; // ms
 const POSITION_UPDATE_INTERVAL = 50; //ms
+const MAX_PLAYERS_COUNT = 30;
 
 bus.on('login', (data, socket, wss) => {
     // data = {username:username}
@@ -46,6 +47,13 @@ bus.on('login', (data, socket, wss) => {
         return socket.send(JSON.stringify({
             type: 'login-failed',
             reason: `Username is too long: max ${MAX_USERNAME_LENGTH} characters`,
+        }));
+    }
+
+    if (Players.getAllPlayers().length >= MAX_PLAYERS_COUNT) {
+        return socket.send(JSON.stringify({
+            type: 'login-failed',
+            reason: `Maksymalna liczba graczy na serwerze`,
         }));
     }
 
@@ -99,7 +107,7 @@ bus.on('disconnect', (ws) => {
     player.connected = false;
 
     console.log(`Gracz ${player.username} rozłączył się`);
-    console.log(Players.getAllPlayers());
+    // console.log(Players.getAllPlayers());
 
 
     player.disconnectTimeout = setTimeout(() => {
@@ -113,6 +121,8 @@ bus.on('disconnect', (ws) => {
             console.log(`Gracz ${player.username} usunięty po braku reconnect`);
         }
     }, MAX_DISCONNECT_TIME);
+
+    broadcastExcept(ws, { type: 'user-disconnect', player: player.username }, { clients: Array.from(sockets.values()) });
 })
 
 bus.on('reconnect', (data, ws, wss) => {
@@ -196,6 +206,9 @@ const positionInterval = setInterval(() => {
     const playersPositions = Players.getAllPlayers().map((p) => {
         return { username: p.username, position: p.position };
     });
+
+    // ewentualnie tutaj jakieś filtrowanie pozycji, które nie powinny być wysyłane (bo są za daleko i niemożliwe do zobaczenia)
+    // ale na razie nie :(
 
     broadcast({ type: 'player-positions', playersPositions }, wss);
 }, POSITION_UPDATE_INTERVAL);

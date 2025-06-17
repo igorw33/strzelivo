@@ -33,7 +33,13 @@ export default class Net {
         },
 
         'user-joined': (data) => {
-            console.log(data);
+            // console.log(data);
+            this.bus.emit('net:userJoined', data);
+        },
+
+        'user-disconnect': (data) => {
+            // console.log(data);
+            this.bus.emit('net:userDisconnect', data);
         },
 
         'stats-success': (data) => {
@@ -49,9 +55,14 @@ export default class Net {
 
         // odebranie pozycji graczy
         'player-positions': (data) => {
-            // data = {type, playerPositions:[{username, position}...]}
-            console.log(data.playersPositions.map((pos) => { return pos.position }));
-            this.bus.emit('net:updatePositions', data.playersPositions)
+            // dane mają format: data = {type:string, playerPositions:[{username, position}...]}
+
+            // Wysyłamy do GAME'a dane:
+            // [{username,position},...];
+            // ale tylko te poza samym sobą
+            const playersPositions = data.playersPositions.filter(p => p.username != this.username);
+
+            this.bus.emit('net:updatePositions', playersPositions);
         }
     };
 
@@ -73,6 +84,8 @@ export default class Net {
         // ui emituje username nowego gracza
         // tutaj wysyłamy dane na serwer
         this.bus.on("ui:login", (data) => {
+            // zapis username'a na potrzeby różne
+            this.username = data.username;
             this.send("login", data);
         });
 

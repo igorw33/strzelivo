@@ -1,11 +1,13 @@
 export default class Ui {
     bus;
+    DELETE_MESSAGE_TIME = 15000;
 
     constructor(bus) {
         this.bus = bus;
         this.setBusEvents();
         this.createLoginScreen();
         this.displayLoginScreen();
+        this.createEventLog();
     }
 
     setBusEvents = () => {
@@ -36,6 +38,14 @@ export default class Ui {
 
         this.bus.on("net:login-failed", (data) => {
             this.displayLoginFailReason(data.reason);
+        });
+
+        this.bus.on("net:userJoined", (data) => {
+            this.createLog(data);
+        });
+
+        this.bus.on("net:userDisconnect", (data) => {
+            this.createLog(data);
         });
     }
 
@@ -138,6 +148,28 @@ export default class Ui {
         leftHpBar.style.backgroundColor = "#00ee00";
 
         hpBar.appendChild(leftHpBar);
+    }
+
+    // EVENT LOG (wiadomości o dołączaniu i wychodzeniu graczy)
+    createEventLog = () => {
+        const eventLog = document.createElement('div');
+        eventLog.id = "event-log";
+        eventLog.classList.add('event-log');
+        document.body.appendChild(eventLog);
+    }
+
+    createLog = (data) => {
+        // data = {type:string, player:string};
+        const message = `Gracz ${data.player} ${data.type == 'user-joined' ? 'dołączył do' : 'wyszedł z'} gry.`;
+        const messageDiv = document.createElement('div');
+        messageDiv.innerHTML = message;
+        messageDiv.classList.add('message');
+        document.getElementById('event-log').appendChild(messageDiv);
+
+        // usuwanie wiadomości po 15 sekundach
+        setTimeout(() => {
+            messageDiv.remove();
+        }, this.DELETE_MESSAGE_TIME);
     }
 
     // STATY

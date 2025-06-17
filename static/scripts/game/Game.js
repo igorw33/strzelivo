@@ -230,7 +230,9 @@ export default class Game {
         this.camera.position.y = this.currentCam;
         // console.log(this.currentCam)
 
-        // wysyłanie pozycji do serwera co 3 klatki (~50ms)
+        // Wysyłanie pozycji do serwera co 3 klatki (~50ms),
+        // na pewno lepiej będzie zrobić osobnego setIntervala, żeby nie bazować na wydajności grafiki xd
+        // Na razie rozwiązanie tymczasowe...
         if (this.frame % 3 == 0) {
             this.bus.emit('game:sendPosition', this.camera.position);
         }
