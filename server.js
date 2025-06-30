@@ -94,7 +94,7 @@ bus.on('login', (data, socket, wss) => {
         othersFiltered
     }));
 
-    broadcastExcept(socket, { type: 'user-joined', player: playerData.username }, wss);
+    broadcastExcept(socket, { type: 'user-joined', player: playerData.username, position: playerData.position, id: playerData.id }, wss);
 })
 
 bus.on('disconnect', (ws) => {
@@ -122,18 +122,26 @@ bus.on('disconnect', (ws) => {
         }
     }, MAX_DISCONNECT_TIME);
 
-    broadcastExcept(ws, { type: 'user-disconnect', player: player.username }, { clients: Array.from(sockets.values()) });
+    broadcastExcept(ws, { type: 'user-disconnect', player: player.username, id: player.id }, { clients: Array.from(sockets.values()) });
 })
 
 bus.on('reconnect', (data, ws, wss) => {
     const player = Players.getPlayer(data.playerID);
 
     if (!player) {
-        return ws.send(JSON.stringify({
+        ws.send(JSON.stringify({
             type: 'reconnect-failed',
             reason: `Przekroczono limit czasu ponownego połączenia`,
         }));
+
+        broadcastExcept(ws, {
+            type: 'player-remove',
+            id: data.playerID,
+        }, wss);
+
+        return;
     }
+
 
     if (player.disconnectTimeout) {
         clearTimeout(player.disconnectTimeout);
@@ -166,7 +174,7 @@ bus.on('reconnect', (data, ws, wss) => {
         othersFiltered
     }));
 
-    broadcastExcept(ws, { type: 'user-joined', player: player.username }, wss);
+    broadcastExcept(ws, { type: 'user-joined', player: player.username, position: player.position, id: player.id }, wss);
 })
 
 bus.on('showStats', (data, socket, wss) => {
@@ -202,9 +210,9 @@ const positionInterval = setInterval(() => {
     // robimy tablicę socketów
     const wss = Array.from(sockets.values());
 
-    // wyciągamy tylko username'a i pozycję
+    // wyciągamy potrzebne dane
     const playersPositions = Players.getAllPlayers().map((p) => {
-        return { username: p.username, position: p.position };
+        return { username: p.username, position: p.position, id: p.id };
     });
 
     // ewentualnie tutaj jakieś filtrowanie pozycji, które nie powinny być wysyłane (bo są za daleko i niemożliwe do zobaczenia)

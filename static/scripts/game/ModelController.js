@@ -7,6 +7,7 @@ export default class ModelController {
         this.bus = bus;
         this.setBusEvents();
         this.collisionMeshes = [];
+        this.playerCollisionMeshes = [];
     }
 
     setBusEvents = () => {
@@ -16,6 +17,10 @@ export default class ModelController {
 
         this.bus.on("game:loadMap", (data) => {
             this.mapLoad(data);
+        })
+
+        this.bus.on("game:loadModel", (data) => {
+            this.modelLoad(data);
         })
     }
 
@@ -61,30 +66,45 @@ export default class ModelController {
         )
     }
 
-    modelLoad = () => {
-        // loader.load(
-        //     '../models/player.glb',
-        //     (glb) => {
-        //         console.log(glb);
-        //         this.model = glb.scene;
-        //         console.log(this.camera.position, this.model.position);
+    modelLoad = (data) => {
+        const loader = new GLTFLoader();
 
-        //         glb.scene.traverse((child) => {
-        //             if (child.isMesh) {
-        //                 this.collisionMeshes.push(child);
-        //                 // (Opcjonalnie) wyłącz cienie lub inne efekty
-        //             }
-        //         });
+        loader.load(
+            '../models/player.glb',
+            (glb) => {
+                console.log(data)
+                this.model = glb.scene;
+                const scaleFactor = 0.15;
 
-        //         this.scene.add(this.model);
-        //     },
-        //     function (xhr) {
-        //         console.log((xhr.loaded / xhr.total) * 100 + "% loaded");
-        //     },
-        //     function (error) {
-        //         console.log("An error happened:", error);
-        //     }
-        // )
-        // 
+                this.model.scale.set(scaleFactor, scaleFactor, scaleFactor);
+                this.model.position.set(data.playerData.position.x, data.playerData.position.y - 0.8, data.playerData.position.z);
+                // console.log(this.camera.position, this.model.position);
+
+                glb.scene.traverse((child) => {
+                    if (child.isMesh) {
+                        child.playerId = data.playerData.id;
+                        // child.position.x = data.playerData.position.x;
+                        // child.position.y = data.playerData.position.y - 0.8;
+                        // child.position.z = data.playerData.position.z;
+                        this.playerCollisionMeshes.push(child);
+                    }
+
+                });
+
+                data.scene.add(this.model);
+
+                const dataToSend = {
+                    collisionMeshes: this.playerCollisionMeshes
+                };
+                this.bus.emit('modelController:sendPlayerMeshes', dataToSend);
+            },
+            function (xhr) {
+                console.log((xhr.loaded / xhr.total) * 100 + "% loaded");
+            },
+            function (error) {
+                console.log("An error happened:", error);
+            }
+        )
+
     }
 }

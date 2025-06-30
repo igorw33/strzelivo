@@ -60,9 +60,15 @@ export default class Net {
             // Wysyłamy do GAME'a dane:
             // [{username,position},...];
             // ale tylko te poza samym sobą
-            const playersPositions = data.playersPositions.filter(p => p.username != this.username);
+            const playerID = sessionStorage.getItem('playerID');
+            const playersPositions = data.playersPositions.filter(p => p.id != playerID);
 
             this.bus.emit('net:updatePositions', playersPositions);
+        },
+
+        // Jakiś gracz się nie połączył po 10 sekundach, całkowite usunięcie go
+        'player-remove': (data) => {
+            this.bus.emit('net:playerRemove', data);
         }
     };
 

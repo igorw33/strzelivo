@@ -24,6 +24,9 @@ export default class Game {
 
         // Czy gracz jest na ziemi
         this.onGround = false;
+
+        this.playerTab = [];
+        this.playerCollisionMeshes = [];
     }
 
     setBusEvents = () => {
@@ -42,8 +45,9 @@ export default class Game {
             this.camera.rotation.set(rotation.x, rotation.y, rotation.z);
             this.oldCamPos = this.camera.position.clone();
 
-            // od razu pointerlock
-            document.body.requestPointerLock();
+            data.othersFiltered.forEach(element => {
+                this.loadModel(element);
+            });
         })
 
         // Odbiór informacji o wciśniętym bądź zwolnionym przycisku
@@ -75,11 +79,40 @@ export default class Game {
             this.jumpHandle(true);
         })
 
-        // Odbiór informacji o meshach
-        // this.bus.on("modelController:sendMeshes", (data) => {
-        //     this.collisionMeshes = data.collisionMeshes;
-        //     console.log("odebrano meshe")
-        // })
+        // Odbiór informacji o dołączeniu/ponownym połączeniu gracza do gry
+        this.bus.on("net:userJoined", (data) => {
+            delete data['type'];
+            let found = false;
+            for (let i = 0; i < this.playerTab.length; i++) {
+                if (this.playerTab[i].id == data.id) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                this.playerTab.push(data);
+                this.loadModel(data);
+            }
+        });
+
+        // Aktualizacja informacji o pozycjach graczy
+        this.bus.on("net:updatePositions", (data) => {
+            // console.log(this.playerTab);
+            // console.log(this.playerCollisionMeshes);
+            if (this.playerTab.length == 0) {
+                data.forEach(element => {
+                    this.playerTab.push(element);
+                    this.loadModel(element);
+                });
+            } else {
+                this.updateModel(data);
+            }
+        });
+
+        // Gracz się nie połączył, usunięcie go
+        this.bus.on("net:playerRemove", (data) => {
+            // tutaj będzie to co pisałem
+        });
     }
 
     // Generowanie sceny
@@ -317,5 +350,40 @@ export default class Game {
         });
 
         this.collisionMeshes = meshes;
+    }
+
+    // Funkcja pomocnicza to ładowania modelu gracza
+    loadModel = async (playerData) => {
+        const data = { scene: this.scene, playerData: playerData };
+
+        const meshes = await new Promise((resolve) => {
+            const handler = (dataFromModelController) => {
+                resolve(dataFromModelController.collisionMeshes);
+            };
+
+            this.bus.on('modelController:sendPlayerMeshes', handler);
+
+            this.bus.emit('game:loadModel', data);
+        });
+
+        this.playerCollisionMeshes = meshes;
+    }
+
+    // Zmiana pozycji modelu
+    updateModel = (playerData) => {
+        // console.log(playerData);
+        // console.log(this.playerCollisionMeshes);
+        playerData.forEach(element => {
+            this.playerCollisionMeshes.forEach(element2 => {
+                if (element2.playerId == element.id) {
+                    element2.parent.position.x = element.position.x;
+                    element2.parent.position.y = element.position.y - 0.8;
+                    element2.parent.position.z = element.position.z;
+                    // element2.position.x = element.position.x;
+                    // element2.position.y = element.position.y;
+                    // element2.position.z = element.position.z;
+                }
+            });
+        });
     }
 }
