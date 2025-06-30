@@ -33,7 +33,6 @@ export default class Net {
         },
 
         'user-joined': (data) => {
-            // console.log(data);
             this.bus.emit('net:userJoined', data);
         },
 

@@ -81,17 +81,19 @@ export default class Game {
 
         // Odbiór informacji o dołączeniu/ponownym połączeniu gracza do gry
         this.bus.on("net:userJoined", (data) => {
-            delete data['type'];
+            // delete data['type'];
+            const newData = Object.fromEntries(Object.entries(data).filter(e => e[0] != 'type')); // zaklęcie
+
             let found = false;
             for (let i = 0; i < this.playerTab.length; i++) {
-                if (this.playerTab[i].id == data.id) {
+                if (this.playerTab[i].id == newData.id) {
                     found = true;
                     break;
                 }
             }
             if (!found) {
-                this.playerTab.push(data);
-                this.loadModel(data);
+                this.playerTab.push(newData);
+                this.loadModel(newData);
             }
         });
 
