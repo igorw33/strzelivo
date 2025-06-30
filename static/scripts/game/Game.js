@@ -3,6 +3,8 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 export default class Game {
     bus;
+    GRAVITY = 20;
+    MAX_JUMP_VELOCITY = 6.3; // dane z instytutu badań z 
 
     constructor(bus) {
         this.bus = bus;
@@ -18,6 +20,7 @@ export default class Game {
 
         // Wysokość, o jaką gracz może maksymalnie skoczyć (do ustalenia)
         this.jumpHeight = 1;
+        this.jumpVelocity = 0;
 
         // Czy gracz jest na ziemi
         this.onGround = false;
@@ -131,6 +134,7 @@ export default class Game {
         // Zmiana pozycji raycastera na pozycję kamery
         this.raycaster.ray.origin.copy(this.camera.position);
         this.raycaster.ray.origin.y -= this.cameraHeight;
+        const delta = this.clock.getDelta();
 
         // Sprawdzenie czy gracz na czymś stoi
         const intersections = this.raycaster.intersectObjects(this.collisionMeshes, false);
@@ -138,28 +142,39 @@ export default class Game {
         const onObject = intersections.length > 0;
 
         // Jak stoi to ok, jak nie to "spada" - do poprawy, na razie jest hardcoded -0.025 ale będzie bardziej "fizycznie"
+        // if (onObject) {
+        //     const camAboveMeshHeight = this.camera.position.y - intersections[0].point.y;
+        //     // console.log(this.camera.position.y - intersections[0].point.y)
+        //     if (camAboveMeshHeight <= 0.8) {
+        //         this.onGround = true;
+        //         this.jumpVelocity = 0;
+
+        //         // console.log('On ground');
+        //     } else {
+        //         this.onGround = false;
+        //     }
+        // }
+        // if (!this.onGround || !onObject) {
+        // console.log('In air');
+
+        // obługa skoku
+        // jumpvelocity jest ustawiane w metodzie handleJump
+        this.jumpVelocity -= this.GRAVITY * delta; // czas w ms
+        this.camera.position.y += this.jumpVelocity * delta;
+        this.currentCam = this.camera.position.y;
+
+
         if (onObject) {
             const camAboveMeshHeight = this.camera.position.y - intersections[0].point.y;
-            // console.log(this.camera.position.y - intersections[0].point.y)
-            if (camAboveMeshHeight <= 0.8) {
+            if (camAboveMeshHeight <= 0.8 && this.jumpVelocity <= 0) {
                 this.onGround = true;
-                // console.log('On ground');
+                this.jumpVelocity = 0;
+                this.camera.position.y = intersections[0].point.y + 0.8;
+                this.currentCam = this.camera.position.y;
             } else {
                 this.onGround = false;
             }
-        }
-        if (!this.onGround || !onObject) {
-            // console.log('In air');
-            if (onObject) {
-                if (this.camera.position.y - intersections[0].point.y <= 0.825) {
-                    this.camera.position.y = intersections[0].point.y + 0.8;
-                } else {
-                    this.camera.position.y -= 0.025;
-                }
-            } else {
-                this.camera.position.y -= 0.025;
-            }
-            this.currentCam = this.camera.position.y;
+        } else {
             this.onGround = false;
         }
 
@@ -247,8 +262,8 @@ export default class Game {
     // Na razie jest hardcoded wartość, ale będzie jakiś wzór na to
     jumpHandle = (hasJumped) => {
         if (this.onGround && hasJumped) {
-            // console.log("Should jump")
-            this.camera.position.y += this.jumpHeight;
+            // console.log("Should jump");
+            this.jumpVelocity = this.MAX_JUMP_VELOCITY;
             this.onGround = false;
         }
     }
