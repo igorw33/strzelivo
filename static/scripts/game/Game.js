@@ -99,21 +99,34 @@ export default class Game {
 
         // Aktualizacja informacji o pozycjach graczy
         this.bus.on("net:updatePositions", (data) => {
-            // console.log(this.playerTab);
-            // console.log(this.playerCollisionMeshes);
+            console.log(this.playerTab);
+            console.log(this.playerCollisionMeshes);
             if (this.playerTab.length == 0) {
                 data.forEach(element => {
                     this.playerTab.push(element);
                     this.loadModel(element);
                 });
             } else {
+                if (this.playerTab.length < this.playerCollisionMeshes.length) {
+                    for (let i = this.playerTab.length; i < this.playerCollisionMeshes.length; i++) {
+                        this.scene.remove(this.playerCollisionMeshes[i].parent);
+                    }
+                    this.playerCollisionMeshes.splice(this.playerTab.length - this.playerCollisionMeshes.length);
+                }
                 this.updateModel(data);
             }
         });
 
         // Gracz się nie połączył, usunięcie go
         this.bus.on("net:playerRemove", (data) => {
-            // tutaj będzie to co pisałem
+            console.log("usunięto")
+            for (let i = 0; i < this.playerCollisionMeshes.length; i++) {
+                if (this.playerTab[i].id == data.id) {
+                    this.scene.remove(this.playerCollisionMeshes[i].parent);
+                    this.playerCollisionMeshes.splice(i, 1);
+                    this.playerTab.splice(i, 1);
+                }
+            }
         });
     }
 
@@ -318,7 +331,7 @@ export default class Game {
         // na pewno lepiej będzie zrobić osobnego setIntervala, żeby nie bazować na wydajności grafiki xd
         // Na razie rozwiązanie tymczasowe...
         if (this.frame % 3 == 0) {
-            this.bus.emit('game:sendPosition', this.camera.position);
+            this.bus.emit('game:sendPosition', { position: this.camera.position, rotation: this.camera.rotation });
         }
         this.frame++;
 
@@ -374,6 +387,7 @@ export default class Game {
     // Zmiana pozycji modelu
     updateModel = (playerData) => {
         // console.log(playerData);
+        // console.log(playerData);
         // console.log(this.playerCollisionMeshes);
         playerData.forEach(element => {
             this.playerCollisionMeshes.forEach(element2 => {
@@ -381,6 +395,7 @@ export default class Game {
                     element2.parent.position.x = element.position.x;
                     element2.parent.position.y = element.position.y - 0.8;
                     element2.parent.position.z = element.position.z;
+                    element2.parent.rotation.y = - element.rotation._y;
                     // element2.position.x = element.position.x;
                     // element2.position.y = element.position.y;
                     // element2.position.z = element.position.z;

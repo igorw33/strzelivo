@@ -66,7 +66,7 @@ export default class Net {
         },
 
         // Jakiś gracz się nie połączył po 10 sekundach, całkowite usunięcie go
-        'player-remove': (data) => {
+        'user-remove': (data) => {
             this.bus.emit('net:playerRemove', data);
         }
     };
@@ -95,16 +95,15 @@ export default class Net {
         });
 
         this.bus.on("game:sendPosition", (data) => {
-            // poprosiłbym dane w formacie:
-            // data = {x,y,z};
-            // Dzięki! Kacper
+            // Dane w formacie:
+            // data = {position: {x,y,z}, rotation: {x,y,z}};
             const id = sessionStorage.getItem('playerID');
 
             // jeśli niezalogowany, wypad
             if (id == null) return;
 
             // Wysyłamy pozycję do serwera
-            const position = { position: data, id: id };
+            const position = { position: data.position, id: id, rotation: data.rotation };
             this.send("sendPosition", position);
         });
 

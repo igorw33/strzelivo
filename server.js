@@ -94,7 +94,7 @@ bus.on('login', (data, socket, wss) => {
         othersFiltered
     }));
 
-    broadcastExcept(socket, { type: 'user-joined', player: playerData.username, position: playerData.position, id: playerData.id }, wss);
+    broadcastExcept(socket, { type: 'user-joined', player: playerData.username, position: playerData.position, id: playerData.id, rotation: playerData.rotation }, wss);
 })
 
 bus.on('disconnect', (ws) => {
@@ -119,6 +119,9 @@ bus.on('disconnect', (ws) => {
             // ids.delete(ws);
             sockets.delete(id);
             console.log(`Gracz ${player.username} usunięty po braku reconnect`);
+
+            const allSockets = Array.from(sockets.values());
+            broadcast({ type: 'user-remove', id: id }, allSockets);
         }
     }, MAX_DISCONNECT_TIME);
 
@@ -134,10 +137,10 @@ bus.on('reconnect', (data, ws, wss) => {
             reason: `Przekroczono limit czasu ponownego połączenia`,
         }));
 
-        broadcastExcept(ws, {
-            type: 'player-remove',
-            id: data.playerID,
-        }, wss);
+        // broadcastExcept(ws, {
+        //     type: 'player-remove',
+        //     id: data.playerID,
+        // }, wss);
 
         return;
     }
@@ -174,7 +177,7 @@ bus.on('reconnect', (data, ws, wss) => {
         othersFiltered
     }));
 
-    broadcastExcept(ws, { type: 'user-joined', player: player.username, position: player.position, id: player.id }, wss);
+    broadcastExcept(ws, { type: 'user-joined', player: player.username, position: player.position, id: player.id, rotation: player.rotation }, wss);
 })
 
 bus.on('showStats', (data, socket, wss) => {
@@ -202,6 +205,7 @@ bus.on('sendPosition', (data, socket, wss) => {
     // tu ewentualnie sprawdzanie, czy gracz nie chodzi zbyt szybko
 
     player.position = data.position;
+    player.rotation = data.rotation;
 });
 
 
@@ -212,7 +216,7 @@ const positionInterval = setInterval(() => {
 
     // wyciągamy potrzebne dane
     const playersPositions = Players.getAllPlayers().map((p) => {
-        return { username: p.username, position: p.position, id: p.id };
+        return { username: p.username, position: p.position, id: p.id, rotation: p.rotation };
     });
 
     // ewentualnie tutaj jakieś filtrowanie pozycji, które nie powinny być wysyłane (bo są za daleko i niemożliwe do zobaczenia)
@@ -232,10 +236,10 @@ function broadcastExcept(excluded, msg, wss) {
 }
 
 function broadcast(msg, wss) {
-    if (wss.length < 2) {
-        // nie ma sensu broadcastować dla single playera
-        return;
-    }
+    // if (wss.length < 2) {
+    // nie ma sensu broadcastować dla single playera
+    // return;
+    // }
 
     for (const client of wss) {
         client.send(JSON.stringify(msg));
