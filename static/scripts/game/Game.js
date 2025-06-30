@@ -225,6 +225,40 @@ export default class Game {
                 console.log("Walking up the ramp")
             } else {
                 console.log('Wall collision detected');
+                let collisionNormal = new THREE.Vector3();
+
+                // Pobierz normalę najbliższej kolizji (np. z pierwszego raycastera)
+                if (intersects.length > 0) {
+                    collisionNormal.copy(intersects[0].face.normal);
+                } else if (intersects2.length > 0) {
+                    collisionNormal.copy(intersects2[0].face.normal);
+                } else if (intersects3.length > 0) {
+                    collisionNormal.copy(intersects3[0].face.normal);
+                }
+
+                // Oblicz sliding vector
+                const movementDirection = moveVector.clone().normalize();
+                const dot = movementDirection.dot(collisionNormal);
+
+                const slideVector = movementDirection.clone().sub(collisionNormal.clone().multiplyScalar(dot)).normalize();
+
+                // Przesuwamy się wzdłuż ściany
+                const angleFactor = Math.sin(1 - Math.abs(dot));  // Sliding siła zależna od kąta
+                const slideStrength = speed * angleFactor; // współczynnik siły slidingu
+
+                const slidePosition = this.camera.position.clone().addScaledVector(slideVector, slideStrength);
+
+                // Sprawdzamy, czy po slidingu nie wchodzimy w inną ścianę
+                this.wallRaycaster.set(this.camera.position, slideVector);
+                this.wallRaycaster.far = speed + 0.5;
+                const slideIntersects = this.wallRaycaster.intersectObjects(this.collisionMeshes, true);
+
+                if (slideIntersects.length == 0) {
+                    this.camera.position.copy(slidePosition);
+                } else {
+                    // Jeśli nawet sliding jest zablokowany - zostajemy w miejscu
+                    console.log('Sliding blocked by wall');
+                }
             }
         }
         // if (this.moveForward) {
