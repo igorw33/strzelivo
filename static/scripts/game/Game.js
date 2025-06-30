@@ -101,19 +101,33 @@ export default class Game {
 
         // Aktualizacja informacji o pozycjach graczy
         this.bus.on("net:updatePositions", (data) => {
-            // console.log(this.playerTab);
-            // console.log(this.playerCollisionMeshes);
+            console.log(this.playerTab);
+            console.log(this.playerCollisionMeshes);
             if (this.playerTab.length == 0) {
                 data.forEach(element => {
                     this.playerTab.push(element);
                     this.loadModel(element);
                 });
             } else {
-                if (this.playerTab.length < this.playerCollisionMeshes.length) {
-                    for (let i = this.playerTab.length * 3; i < this.playerCollisionMeshes.length; i++) {
-                        this.scene.remove(this.playerCollisionMeshes[i].parent);
+                if (this.playerTab.length * 3 < this.playerCollisionMeshes.length) {
+                    const meshCountByPlayer = new Map();
+
+                    for (let i = this.playerCollisionMeshes.length - 1; i >= 0; i--) {
+                        const mesh = this.playerCollisionMeshes[i];
+                        const playerId = mesh.playerId;
+
+                        // Zliczanie meshy dla danego gracza
+                        const currentCount = meshCountByPlayer.get(playerId) || 0;
+
+                        if (currentCount >= 3) {
+                            // Usuwamy mesh ze sceny i z tablicy, bo jest nadmiarowy
+                            this.scene.remove(mesh.parent);
+                            this.playerCollisionMeshes.splice(i, 1);
+                        } else {
+                            // Dodajemy do licznika
+                            meshCountByPlayer.set(playerId, currentCount + 1);
+                        }
                     }
-                    this.playerCollisionMeshes.splice(this.playerTab.length * 3 - this.playerCollisionMeshes.length);
                 }
                 this.updateModel(data);
             }
@@ -126,10 +140,17 @@ export default class Game {
         // Gracz się nie połączył, usunięcie go
         this.bus.on("net:playerRemove", (data) => {
             console.log("usunięto")
-            for (let i = 0; i < this.playerCollisionMeshes.length; i++) {
-                if (this.playerTab[i].id == data.id) {
+            // Usuwanie meshy gracza
+            for (let i = this.playerCollisionMeshes.length - 1; i >= 0; i--) {
+                if (this.playerCollisionMeshes[i].playerId === data.id) {
                     this.scene.remove(this.playerCollisionMeshes[i].parent);
                     this.playerCollisionMeshes.splice(i, 1);
+                }
+            }
+
+            // Usuwanie gracza z tablicy graczy
+            for (let i = this.playerTab.length - 1; i >= 0; i--) {
+                if (this.playerTab[i].id === data.id) {
                     this.playerTab.splice(i, 1);
                 }
             }
