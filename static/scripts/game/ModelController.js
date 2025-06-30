@@ -70,7 +70,7 @@ export default class ModelController {
         const loader = new GLTFLoader();
 
         loader.load(
-            '../models/player.glb',
+            '../models/pd.glb',
             (glb) => {
                 console.log(data)
                 this.model = glb.scene;
@@ -93,6 +93,9 @@ export default class ModelController {
 
                 data.scene.add(this.model);
 
+                console.log(this.playerCollisionMeshes.forEach(m => {
+                    console.log(m);
+                }))
                 const dataToSend = {
                     collisionMeshes: this.playerCollisionMeshes
                 };

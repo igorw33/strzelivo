@@ -5,6 +5,8 @@ export default class Game {
     bus;
     GRAVITY = 20;
     MAX_JUMP_VELOCITY = 6.3; // dane z instytutu badań z 
+    UIHidden = false;
+    SPREAD_FACTOR = 0.1;
 
     constructor(bus) {
         this.bus = bus;
@@ -99,8 +101,8 @@ export default class Game {
 
         // Aktualizacja informacji o pozycjach graczy
         this.bus.on("net:updatePositions", (data) => {
-            console.log(this.playerTab);
-            console.log(this.playerCollisionMeshes);
+            // console.log(this.playerTab);
+            // console.log(this.playerCollisionMeshes);
             if (this.playerTab.length == 0) {
                 data.forEach(element => {
                     this.playerTab.push(element);
@@ -108,14 +110,18 @@ export default class Game {
                 });
             } else {
                 if (this.playerTab.length < this.playerCollisionMeshes.length) {
-                    for (let i = this.playerTab.length; i < this.playerCollisionMeshes.length; i++) {
+                    for (let i = this.playerTab.length * 3; i < this.playerCollisionMeshes.length; i++) {
                         this.scene.remove(this.playerCollisionMeshes[i].parent);
                     }
-                    this.playerCollisionMeshes.splice(this.playerTab.length - this.playerCollisionMeshes.length);
+                    this.playerCollisionMeshes.splice(this.playerTab.length * 3 - this.playerCollisionMeshes.length);
                 }
                 this.updateModel(data);
             }
         });
+
+        this.bus.on("ui:hideLogin", () => {
+            this.UIHidden = true;
+        })
 
         // Gracz się nie połączył, usunięcie go
         this.bus.on("net:playerRemove", (data) => {
@@ -128,6 +134,16 @@ export default class Game {
                 }
             }
         });
+
+        this.bus.on("movementController:mouseClick", (data) => {
+            if (data.mouseLeft && this.UIHidden) { // jeśli lewy przycisk kliknięty
+                this.shootHandle();
+            }
+
+            if (data.mouseRight) {
+                // pass
+            }
+        })
     }
 
     // Generowanie sceny
@@ -163,6 +179,9 @@ export default class Game {
         this.wallRaycaster2 = new THREE.Raycaster();
         // Raycaster, który będzie kontrolował czy gracz wchodzi po rampie
         this.wallRaycaster3 = new THREE.Raycaster();
+
+        // Raycaster, który będzie kontrolował strzelanie (ustawiony na pozycji głowy)
+        this.shootRaycaster = new THREE.Raycaster();
 
         const ambientLight = new THREE.AmbientLight(0xffffff, 1);
         this.scene.add(ambientLight);
@@ -348,6 +367,55 @@ export default class Game {
             this.jumpVelocity = this.MAX_JUMP_VELOCITY;
             this.onGround = false;
         }
+    }
+
+    shootHandle = () => {
+        const dotGeometry = new THREE.SphereGeometry(0.02, 8, 8);
+        const dotMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+        const laserDot = new THREE.Mesh(dotGeometry, dotMaterial);
+        const laserDirection = new THREE.Vector3();
+        this.camera.getWorldDirection(laserDirection);
+        laserDirection.y += 0.115;
+
+        const raycaster = new THREE.Raycaster();
+        raycaster.set(this.camera.position, laserDirection);
+
+        const direction = new THREE.Vector3();
+        this.camera.getWorldDirection(direction); // pobieramy wektor kierunku kamery
+        // direction.normalize();
+        direction.y += 0.115;
+
+        // jeśli skok, to zmieniamy pozycję raycastera o losowe wartości
+        if (!this.onGround) {
+            direction.x += this.SPREAD_FACTOR * Math.sin(2 * Math.PI * Math.random());
+            direction.y += this.SPREAD_FACTOR * Math.sin(2 * Math.PI * Math.random());
+            direction.z += this.SPREAD_FACTOR * Math.sin(2 * Math.PI * Math.random());
+        }
+
+        const playerPosition = this.camera.position;
+        this.shootRaycaster.set(playerPosition, direction);
+        this.shootRaycaster.far = 100;
+        const intersects = this.shootRaycaster.intersectObjects(this.scene.children, true).filter(hit => hit.object !== this.playerMesh);
+
+        if (intersects.length > 0) {
+            const shootPoint = intersects[0].point;
+            laserDot.position.set(shootPoint.x, shootPoint.y, shootPoint.z);
+            this.scene.add(laserDot);
+
+            const data = {
+                id: sessionStorage.getItem('playerID'),
+                bodyPart: intersects[0].object.name,
+                targetPlayer: intersects[0].object.playerId
+            };
+
+            this.bus.emit('game:shoot', data);
+        }
+
+        this.shoot(); // jakaś animacja strzału
+    }
+
+    shoot = () => {
+        // pass
     }
 
     // Funkcja pomocnicza to ładowania modelu mapy

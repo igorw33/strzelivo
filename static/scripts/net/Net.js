@@ -118,6 +118,12 @@ export default class Net {
                 this.bus.emit('net:showStats', this.lastStats);
             }
         });
+
+        this.bus.on("game:shoot", (data) => {
+            if (!data.targetPlayer) return;
+
+            this.send('shoot', data);
+        })
     }
 
     setupSocket = () => {

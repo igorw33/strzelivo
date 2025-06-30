@@ -23,6 +23,10 @@ const handlers = {
     'sendPosition': (wss, ws, data) => {
         bus.emit(data.type, data, ws, wss);
     },
+
+    'shoot': (wss, ws, data) => {
+        bus.emit(data.type, data, ws, wss);
+    }
 }
 
 const setupWebSocket = (server) => {

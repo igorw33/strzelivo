@@ -22,6 +22,12 @@ const { bus } = require("./EventBus");
 const Players = require('./players');
 const spawnpoints = require('./spawnpoints');
 
+// mapa <część ciała, hp>
+const bodyPartToHP = new Map();
+bodyPartToHP.set('head', 100);
+bodyPartToHP.set('body', 20);
+bodyPartToHP.set('legs', 10);
+
 // mapa socketów graczy: <playerID, socket>
 const sockets = new Map();
 // mapa odwrotna: <socket,id>
@@ -66,6 +72,7 @@ bus.on('login', (data, socket, wss) => {
         connected: true,
         isAlive: true,
         hp: 100,
+        attackers: [],
     }
 
     ids.set(socket, playerData.id);
@@ -84,7 +91,8 @@ bus.on('login', (data, socket, wss) => {
             stats: o.stats,
             connected: o.connected,
             isAlive: o.isAlive,
-            hp: o.hp
+            hp: o.hp,
+            attackers: o.attackers
         }
     })
 
@@ -166,7 +174,8 @@ bus.on('reconnect', (data, ws, wss) => {
             stats: o.stats,
             connected: o.connected,
             isAlive: o.isAlive,
-            hp: o.hp
+            hp: o.hp,
+            attackers: o.attackers
             // pomijamy setinterval, bo generuje problemy cirkulacji XD
         }
     })
@@ -225,6 +234,33 @@ const positionInterval = setInterval(() => {
     broadcast({ type: 'player-positions', playersPositions }, wss);
 }, POSITION_UPDATE_INTERVAL);
 
+bus.on('shoot', (data, socket, wss) => {
+    const targetPlayer = Players.getPlayer(data.targetPlayer);
+    const attacker = Players.getPlayer(data.id);
+
+    targetPlayer.hp -= bodyPartToHP.get(data.bodyPart) - Math.random() * 5;
+    const assists = targetPlayer.attackers;
+
+    // jeśli nie ma w liście asystujących, dodaj asystującego
+    if (!assists.find(p => p.username == attacker.username)) {
+        assists.push(attacker);
+    }
+
+    if (targetPlayer.hp <= 0) {
+        targetPlayer.stats.deaths++;
+        targetPlayer.isAlive = false;
+
+        attacker.stats.kills++;
+
+        assists.forEach(a => {
+            if (a.username != attacker.username) {
+                a.stats.assists++;
+            }
+        })
+
+        broadcastExcept(sockets.get(data.targetPlayer), { type: 'player-killed', attacker: attacker.username, killed: targetPlayer.username }, wss)
+    }
+})
 
 
 function broadcastExcept(excluded, msg, wss) {
