@@ -242,8 +242,8 @@ bus.on('shoot', (data, socket, wss) => {
     const assists = targetPlayer.attackers;
 
     // jeśli nie ma w liście asystujących, dodaj asystującego
-    if (!assists.find(p => p.username == attacker.username)) {
-        assists.push(attacker);
+    if (!assists.find(p => p == attacker.username)) {
+        assists.push(attacker.username);
     }
 
     if (targetPlayer.hp <= 0) {
@@ -253,8 +253,9 @@ bus.on('shoot', (data, socket, wss) => {
         attacker.stats.kills++;
 
         assists.forEach(a => {
-            if (a.username != attacker.username) {
-                a.stats.assists++;
+            if (a != attacker.username) {
+                const assistant = Players.getAllPlayers().find(p => p.username == a);
+                assistant.stats.assists++;
             }
         })
 
