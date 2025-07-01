@@ -27,8 +27,12 @@ export default class Game {
         // Czy gracz jest na ziemi
         this.onGround = false;
 
+        // Tablice z graczami i ich meshami
         this.playerTab = [];
         this.playerCollisionMeshes = [];
+
+        // Czy gracz jest martwy
+        this.dead = false;
     }
 
     setBusEvents = () => {
@@ -62,12 +66,14 @@ export default class Game {
 
         // Odbiór informacji o ruchu myszką i zmiana ustawienia kamery poprzez zastosowanie kwaternionu
         this.bus.on("movementController:mouseMove", (data) => {
-            this.euler.y -= data.movementX * this.rotationSpeed;
-            this.euler.x -= data.movementY * this.rotationSpeed;
-            this.euler.x = Math.min(Math.max(this.euler.x, -1.55334303), 1.55334303);
-            // console.log(this.euler.x, this.euler.y)
+            if (!this.dead) {
+                this.euler.y -= data.movementX * this.rotationSpeed;
+                this.euler.x -= data.movementY * this.rotationSpeed;
+                this.euler.x = Math.min(Math.max(this.euler.x, -1.55334303), 1.55334303);
+                // console.log(this.euler.x, this.euler.y)
 
-            this.camera.quaternion.setFromEuler(this.euler);
+                this.camera.quaternion.setFromEuler(this.euler);
+            }
         })
 
         // Odbiór informacji o kliknięciu lub zwolnieniu lewego lub prawego przycisku myszy
@@ -78,7 +84,9 @@ export default class Game {
 
         // Odbiór informacji o skoku
         this.bus.on("movementController:jump", () => {
-            this.jumpHandle(true);
+            if (!this.dead) {
+                this.jumpHandle(true);
+            }
         })
 
         // Odbiór informacji o dołączeniu/ponownym połączeniu gracza do gry
@@ -101,8 +109,8 @@ export default class Game {
 
         // Aktualizacja informacji o pozycjach graczy
         this.bus.on("net:updatePositions", (data) => {
-            console.log(this.playerTab);
-            console.log(this.playerCollisionMeshes);
+            // console.log(this.playerTab);
+            // console.log(this.playerCollisionMeshes);
             if (this.playerTab.length == 0) {
                 data.forEach(element => {
                     this.playerTab.push(element);
@@ -157,13 +165,40 @@ export default class Game {
         });
 
         this.bus.on("movementController:mouseClick", (data) => {
-            if (data.mouseLeft && this.UIHidden) { // jeśli lewy przycisk kliknięty
-                this.shootHandle();
-            }
+            if (!this.dead) {
+                if (data.mouseLeft && this.UIHidden) { // jeśli lewy przycisk kliknięty
+                    this.shootHandle();
+                }
 
-            if (data.mouseRight) {
-                // pass
+                if (data.mouseRight) {
+                    // pass
+                }
             }
+        })
+
+        // Odbiór informacji o mojej śmierci
+        this.bus.on("net:kill-me", () => {
+            this.dead = true;
+        })
+
+        // Odbiór informacji o moim respawnie
+        this.bus.on("net:respawn-me", (data) => {
+            console.log("respawn mnie")
+            this.dead = false;
+            this.camera.position.set(data.newPosition.x, data.newPosition.y, data.newPosition.z);
+            this.camera.rotation.set(0, 0, 0);
+        })
+
+        // Odbiór informacji o czyjejś śmierci
+        this.bus.on("net:someoneKilled", (data) => {
+            this.playerCollisionMeshes.forEach(element => {
+                if (element.playerId == data.killed_id) {
+                    element.parent.position.x = 0;
+                    element.parent.position.y = 0;
+                    element.parent.position.z = 0;
+                    element.parent.rotation.y = 0;
+                }
+            });
         })
     }
 
@@ -278,13 +313,15 @@ export default class Game {
         strafeDirection.crossVectors(this.camera.up, direction).normalize();
 
         const moveVector = new THREE.Vector3();
-        if (this.moveForward) moveVector.add(direction);
-        if (this.moveBackward) moveVector.addScaledVector(direction, -1);
-        if (this.moveLeft) moveVector.add(strafeDirection);
-        if (this.moveRight) moveVector.addScaledVector(strafeDirection, -1);
+        if (!this.dead) {
+            if (this.moveForward) moveVector.add(direction);
+            if (this.moveBackward) moveVector.addScaledVector(direction, -1);
+            if (this.moveLeft) moveVector.add(strafeDirection);
+            if (this.moveRight) moveVector.addScaledVector(strafeDirection, -1);
+        }
 
-        // Ruch kamery na podstawie naciśniętych przycisków, z uwzględnieniem kolizji ścian (na razie tylko na poziomie głowy)
-        if (moveVector.lengthSq() > 0) {
+        // Ruch kamery na podstawie naciśniętych przycisków, z uwzględnieniem kolizji ścian)
+        if (moveVector.lengthSq() > 0 && !this.dead) {
             moveVector.normalize();
 
             // Przewidywanie nowej pozycji, dla niej sprawdzane jest czy gracz może się ruszyć
@@ -383,7 +420,7 @@ export default class Game {
     // Zmienna hasJumped będzie stosowana aby odróżnić czy gracz właśnie skoczył czy zeskoczył z czegoś bez wciskania spacji
     // Na razie jest hardcoded wartość, ale będzie jakiś wzór na to
     jumpHandle = (hasJumped) => {
-        if (this.onGround && hasJumped) {
+        if (this.onGround && hasJumped && !this.dead) {
             // console.log("Should jump");
             this.jumpVelocity = this.MAX_JUMP_VELOCITY;
             this.onGround = false;
@@ -482,7 +519,7 @@ export default class Game {
         // console.log(this.playerCollisionMeshes);
         playerData.forEach(element => {
             this.playerCollisionMeshes.forEach(element2 => {
-                if (element2.playerId == element.id) {
+                if (element2.playerId == element.id && element.isAlive) {
                     element2.parent.position.x = element.position.x;
                     element2.parent.position.y = element.position.y - 0.8;
                     element2.parent.position.z = element.position.z;

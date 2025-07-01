@@ -37,6 +37,7 @@ const MAX_USERNAME_LENGTH = 30;
 const MAX_DISCONNECT_TIME = 10000; // ms
 const POSITION_UPDATE_INTERVAL = 50; //ms
 const MAX_PLAYERS_COUNT = 30;
+const RESPAWN_TIME = 1000; //ms
 
 bus.on('login', (data, socket, wss) => {
     // data = {username:username}
@@ -225,7 +226,7 @@ const positionInterval = setInterval(() => {
 
     // wyciągamy potrzebne dane
     const playersPositions = Players.getAllPlayers().map((p) => {
-        return { username: p.username, position: p.position, id: p.id, rotation: p.rotation };
+        return { username: p.username, position: p.position, id: p.id, rotation: p.rotation, isAlive: p.isAlive };
     });
 
     // ewentualnie tutaj jakieś filtrowanie pozycji, które nie powinny być wysyłane (bo są za daleko i niemożliwe do zobaczenia)
@@ -238,13 +239,14 @@ bus.on('shoot', (data, socket, wss) => {
     const targetPlayer = Players.getPlayer(data.targetPlayer);
     const attacker = Players.getPlayer(data.id);
 
-    targetPlayer.hp -= bodyPartToHP.get(data.bodyPart) - Math.random() * 5;
+    // targetPlayer.hp -= bodyPartToHP.get(data.bodyPart) - Math.random() * 5;
+    targetPlayer.hp -= bodyPartToHP.get(data.bodyPart);
 
     const assists = targetPlayer.attackers;
 
     // jeśli nie ma w liście asystujących, dodaj asystującego
-    if (!assists.find(p => p == attacker.username)) {
-        assists.push(attacker.username);
+    if (!assists.find(p => p == attacker.id)) {
+        assists.push(attacker.id);
     }
 
     if (targetPlayer.hp <= 0) {
@@ -255,18 +257,33 @@ bus.on('shoot', (data, socket, wss) => {
         attacker.stats.kills++;
 
         assists.forEach(a => {
-            if (a != attacker.username) {
-                const assistant = Players.getAllPlayers().find(p => p.username == a);
+            if (a != attacker.id) {
+                const assistant = Players.getAllPlayers().find(p => p.id == a);
                 assistant.stats.assists++;
             }
         })
 
-
-
-        broadcast({ type: 'player-killed', attacker: attacker.username, killed: targetPlayer.username }, wss.clients);
-
         // czyszczenie pamięci asystujących
         targetPlayer.attackers = [];
+
+        broadcast({ type: 'player-killed', attacker: attacker.username, killed: targetPlayer.username, killed_id: targetPlayer.id, attacker_id: attacker.id, assistants: assists }, wss.clients);
+
+        setTimeout(() => {
+            // Resetowanie wartości gracza
+            targetPlayer.hp = 100;
+            targetPlayer.isAlive = true;
+            targetPlayer.position = generatePlayerPosition() || { x: 4, y: 1009, z: 1232 };
+            targetPlayer.rotation = { x: 0, y: 0, z: 0 };
+
+            broadcast({
+                type: 'player-respawned',
+                id: targetPlayer.id,
+                username: targetPlayer.username,
+                hp: targetPlayer.hp,
+                newPosition: targetPlayer.position
+            }, wss.clients);
+        }, RESPAWN_TIME);
+
     }
 
     sockets.get(data.targetPlayer).send(JSON.stringify({
