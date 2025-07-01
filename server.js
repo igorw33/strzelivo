@@ -336,7 +336,7 @@ function generatePlayerPosition() {
     // wybieramy spawn o największej sumie
     let mostDistant = spawns[0];
     let maxDistance = 0;
-    for (const spawn in spawns) {
+    for (const spawn of spawns) {
         let distance = 0;
 
         // Obliczanie sumy dystansów spawnpoint-players
