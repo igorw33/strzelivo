@@ -72,11 +72,11 @@ table {
 
 .crosshair {
     overflow: hidden;
-    background-image: url('../images/crosshair.png');
+    background-image: url('../images/crosshair_dot2.png');
     background-repeat: no-repeat;
     background-size: contain;
-    width: 30px;
-    height: 30px;
+    width: 150px;
+    height: 150px;
     position: fixed;
     top: 50%;
     left: 50%;

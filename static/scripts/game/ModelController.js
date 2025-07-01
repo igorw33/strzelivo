@@ -93,9 +93,6 @@ export default class ModelController {
 
                 data.scene.add(this.model);
 
-                console.log(this.playerCollisionMeshes.forEach(m => {
-                    console.log(m);
-                }))
                 const dataToSend = {
                     collisionMeshes: this.playerCollisionMeshes
                 };
