@@ -259,7 +259,7 @@ bus.on('shoot', (data, socket, wss) => {
         assists.forEach(a => {
             if (a != attacker.id) {
                 const assistant = Players.getAllPlayers().find(p => p.id == a);
-                assistant.stats.assists++;
+                if (assistant) assistant.stats.assists++;
             }
         })
 
