@@ -7,6 +7,7 @@ export default class Game {
     MAX_JUMP_VELOCITY = 6.3; // dane z instytutu badań z 
     UIHidden = false;
     SPREAD_FACTOR = 0.1;
+    SHOT_DEBRIS_LIFE_TIME = 5000;
 
     constructor(bus) {
         this.bus = bus;
@@ -461,6 +462,10 @@ export default class Game {
             const shootPoint = intersects[0].point;
             laserDot.position.set(shootPoint.x, shootPoint.y, shootPoint.z);
             this.scene.add(laserDot);
+
+            setTimeout(() => {
+                this.scene.remove(laserDot);
+            }, this.SHOT_DEBRIS_LIFE_TIME);
 
             const data = {
                 id: sessionStorage.getItem('playerID'),
