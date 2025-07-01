@@ -88,6 +88,7 @@ export default class Net {
 
         'player-respawned': (data) => {
             if (data.id == sessionStorage.getItem('playerID')) {
+                console.log("net", data);
                 this.bus.emit("net:respawn-me", data);
             }
         },
@@ -95,8 +96,12 @@ export default class Net {
         'user-killed': (data) => {
             this.bus.emit('net:user-killed', data);
         },
+
         'kill-feed': (data) => {
             this.bus.emit('net:kill-feed', data);
+            // if (data.victim == this.username) {
+            //     this.bus.emit("net:kill-me");
+            // }
         },
     };
 

@@ -272,6 +272,16 @@ bus.on('shoot', (data, socket, wss) => {
         // czyszczenie pamięci asystujących
         targetPlayer.attackers = [];
 
+        // dwa broadcasty jeden cel XD
+        broadcast({
+            type: 'player-killed',
+            attacker: attacker.username,
+            killed: targetPlayer.username,
+            killed_id: targetPlayer.id,
+            attacker_id: attacker.id,
+            assistants: assists
+        }, wss.clients);
+
         // POWIADOMIENIE O ZABÓJSTWIE
         broadcast({
             type: 'kill-feed',
