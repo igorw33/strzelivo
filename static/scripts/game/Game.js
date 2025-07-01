@@ -110,6 +110,12 @@ export default class Game {
 
         // Aktualizacja informacji o pozycjach graczy
         this.bus.on("net:updatePositions", (data) => {
+
+            if (this.respawnSyncIgnoreTicks > 0) {
+                this.respawnSyncIgnoreTicks--;
+                console.log("Ignoring server sync because of recent respawn");
+                return;
+            }
             // console.log(this.playerTab);
             // console.log(this.playerCollisionMeshes);
             if (this.playerTab.length == 0) {
@@ -186,8 +192,19 @@ export default class Game {
         this.bus.on("net:respawn-me", (data) => {
             console.log("respawn mnie")
             this.dead = false;
-            this.camera.position.set(data.newPosition.x, data.newPosition.y, data.newPosition.z);
+
+            const { x, y, z } = data.newPosition;
+            this.camera.position.set(x, y, z);
+            this.currentCam = y;
+
+            this.jumpVelocity = 0;
+
+            console.log('nowa pozycja:', this.camera.position);
+
+
             this.camera.rotation.set(0, 0, 0);
+
+            this.respawnSyncIgnoreTicks = 3;
         })
 
         // Odbiór informacji o czyjejś śmierci
@@ -412,6 +429,8 @@ export default class Game {
             this.bus.emit('game:sendPosition', { position: this.camera.position, rotation: this.camera.rotation });
         }
         this.frame++;
+
+
 
 
         this.renderer.render(this.scene, this.camera);
