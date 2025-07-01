@@ -34,6 +34,9 @@ export default class Game {
 
         // Czy gracz jest martwy
         this.dead = false;
+
+        this.lastFootstepTime = 0;
+        this.footstepPlayers = {}; // {playerId: Audio}
     }
 
     setBusEvents = () => {
@@ -218,6 +221,38 @@ export default class Game {
                 }
             });
         })
+
+        this.bus.on("net:footstep", (data) => {
+            console.log('net:footstep', data);
+
+            const myPos = this.camera.position;
+            const dx = myPos.x - data.position.x;
+            const dy = myPos.y - data.position.y;
+            const dz = myPos.z - data.position.z;
+            const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+            let volume = 0;
+            if (dist < 5) volume = 0.7;
+            else if (dist > 8) volume = 0;
+            else volume = 0.7 * (1 - (dist - 5) / 3);
+
+            if (volume > 0) {
+                if (!this.footstepPlayers[data.id]) {
+                    this.footstepPlayers[data.id] = new Audio('sounds/footstep.mp3');
+                } else {
+                    this.footstepPlayers[data.id].pause();
+                }
+                const audio = this.footstepPlayers[data.id];
+                audio.volume = volume;
+                audio.currentTime = 1.0;
+                audio.play();
+
+                if (audio._footstepTimeout) clearTimeout(audio._footstepTimeout);
+                audio._footstepTimeout = setTimeout(() => {
+                    audio.pause();
+                    audio.currentTime = 1.0;
+                }, 500);
+            }
+        });
     }
 
     // Generowanie sceny
@@ -430,8 +465,23 @@ export default class Game {
         }
         this.frame++;
 
-
-
+        if (!this.dead && (this.moveForward || this.moveBackward || this.moveLeft || this.moveRight)) {
+            const now = performance.now();
+            if (now - this.lastFootstepTime > 500) { // co 500ms krok
+                const footstepData = {
+                    id: sessionStorage.getItem('playerID'),
+                    position: {
+                        x: this.camera.position.x,
+                        y: this.camera.position.y,
+                        z: this.camera.position.z
+                    }
+                };
+                this.bus.emit("game:footstep", footstepData);
+                // Odtwarzaj własny dźwięk natychmiast
+                this.bus.emit("net:footstep", footstepData);
+                this.lastFootstepTime = now;
+            }
+        }
 
         this.renderer.render(this.scene, this.camera);
     }

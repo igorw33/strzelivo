@@ -315,6 +315,36 @@ bus.on('shoot', (data, socket, wss) => {
 
 })
 
+bus.on('footstep', (data, socket, wss) => {
+    console.log('footstep from', data.id, 'at', data.position);
+
+    const senderId = data.id;
+    const senderPlayer = Players.getPlayer(senderId);
+    if (!senderPlayer) return;
+
+    // Wyślij tylko do graczy w zasięgu 20 jednostek
+    Players.getAllPlayers().forEach(player => {
+        if (player.id === senderId) return; // nie wysyłaj do siebie
+
+        // Oblicz dystans
+        const dx = player.position.x - data.position.x;
+        const dy = player.position.y - data.position.y;
+        const dz = player.position.z - data.position.z;
+        const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+
+        if (dist <= 20) {
+            const targetSocket = sockets.get(player.id);
+            if (targetSocket && targetSocket.readyState === 1) {
+                targetSocket.send(JSON.stringify({
+                    type: 'footstep',
+                    id: senderId,
+                    position: data.position
+                }));
+            }
+        }
+    });
+});
+
 
 function broadcastExcept(excluded, msg, wss) {
     for (const client of wss.clients) {

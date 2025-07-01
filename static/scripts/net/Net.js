@@ -103,6 +103,10 @@ export default class Net {
             //     this.bus.emit("net:kill-me");
             // }
         },
+
+        'footstep': (data) => {
+            this.bus.emit('net:footstep', data);
+        },
     };
 
     constructor(url, bus) {
@@ -158,6 +162,12 @@ export default class Net {
 
             this.send('shoot', data);
         })
+
+        this.bus.on("game:footstep", (data) => {
+            const id = sessionStorage.getItem('playerID');
+            if (!id) return;
+            this.send("footstep", { id, position: data.position });
+        });
     }
 
     setupSocket = () => {
