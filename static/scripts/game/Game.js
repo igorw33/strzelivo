@@ -391,6 +391,11 @@ export default class Game {
         this.camera.position.y += this.jumpVelocity * delta;
         this.currentCam = this.camera.position.y;
 
+        if (this.camera.position.y < 1000 && !this.onGround) {
+            this.camera.position.y = 1012;
+            this.currentCam = 1012;
+        }
+
 
         if (onObject) {
             const camAboveMeshHeight = this.camera.position.y - intersections[0].point.y;
