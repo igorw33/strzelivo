@@ -599,12 +599,16 @@ export default class Game {
 
             this.shootRaycaster.set(origin, direction);
             this.shootRaycaster.far = 100;
+            this.shootRaycaster.near = 0;
             const intersects = this.shootRaycaster.intersectObjects(this.scene.children, true).filter(hit => hit.object !== this.playerMesh);
-            intersectTab.push(intersects[0]);
+            console.log(intersects)
+            if (intersects.length > 0) {
+                intersectTab.push(intersects[0]);
 
-            const shootPoint = intersects[0].point;
-            laserDot.position.set(shootPoint.x, shootPoint.y, shootPoint.z);
-            // this.scene.add(laserDot);
+                const shootPoint = intersects[0].point;
+                laserDot.position.set(shootPoint.x, shootPoint.y, shootPoint.z);
+                // this.scene.add(laserDot);
+            }
         }
         console.log(intersectTab);
 
@@ -657,6 +661,7 @@ export default class Game {
         const playerPosition = this.camera.position;
         this.shootRaycaster.set(playerPosition, direction);
         this.shootRaycaster.far = 100;
+        this.shootRaycaster.near = 0;
         const intersects = this.shootRaycaster.intersectObjects(this.scene.children, true).filter(hit => hit.object !== this.playerMesh);
 
         if (intersects.length > 0) {
