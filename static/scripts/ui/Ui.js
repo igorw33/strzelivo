@@ -49,14 +49,14 @@ export default class Ui {
             this.createLog(data);
         });
 
-        this.bus.on("net:hp", (data) => {
-            this.setHpBar(data.hp);
-        })
+        // KILL FEED
+        this.bus.on("net:kill-feed", (data) => {
+            this.showKillFeed(data);
+        });
 
-        this.bus.on("net:kill-me", () => {
-            // this.createRespawnScreen();
-            // this.displayRespawnScreen();
-        })
+        this.bus.on("net:user-killed", (data) => {
+            this.createKillLog(data);
+        });
     }
 
     // LOGIN SCREEN
@@ -197,6 +197,23 @@ export default class Ui {
         }, this.DELETE_MESSAGE_TIME);
     }
 
+    createKillLog = (data) => {
+        // data = {killer, victim, assist}
+        let message = `Gracz <b>${data.killer}</b> zabił <b>${data.victim}</b>`;
+        if (data.assist) {
+            message += ` (asysta: <b>${data.assist}</b>)`;
+        }
+        const messageDiv = document.createElement('div');
+        messageDiv.innerHTML = message;
+        messageDiv.classList.add('message');
+        document.getElementById('event-log').appendChild(messageDiv);
+
+        // usuwanie wiadomości po 15 sekundach
+        setTimeout(() => {
+            messageDiv.remove();
+        }, this.DELETE_MESSAGE_TIME);
+    }
+
     // STATY
     showStats = (data) => {
         /*
@@ -301,4 +318,40 @@ export default class Ui {
 
     //     document.body.appendChild(this.container);
     // }
+
+    // KILL FEED UI
+    createKillFeedContainer = () => {
+        if (this.killFeedContainer) return;
+        this.killFeedContainer = document.createElement('div');
+        this.killFeedContainer.id = 'kill-feed-container';
+        this.killFeedContainer.classList.add('kill-feed-container');
+        document.body.appendChild(this.killFeedContainer);
+    }
+
+    showKillFeed = ({ killer, victim, assist }) => {
+        this.createKillFeedContainer();
+
+        const gunSVG = `
+            <svg class="kill-icon" width="28" height="18" viewBox="0 0 28 18" style="transform: scaleX(-1); vertical-align: middle;">
+                <rect x="2" y="7" width="18" height="4" rx="1" fill="#444"/>
+                <rect x="20" y="8" width="6" height="2" rx="1" fill="#888"/>
+                <rect x="6" y="11" width="5" height="4" rx="1" fill="#222"/>
+                <rect x="13" y="11" width="3" height="3" rx="1" fill="#666"/>
+            </svg>
+        `;
+
+        const feed = document.createElement('div');
+        feed.classList.add('kill-feed-entry');
+        feed.innerHTML = `
+            <span class="killer">${killer}</span>
+            ${assist ? `<span class="assist"> (asysta: ${assist})</span>` : ''}
+            ${gunSVG}
+            <span class="victim">${victim}</span>
+        `;
+        this.killFeedContainer.appendChild(feed);
+
+        setTimeout(() => {
+            feed.remove();
+        }, 5000);
+    }
 }
