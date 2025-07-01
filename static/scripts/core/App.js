@@ -18,7 +18,8 @@ export default class App {
         this.game = new Game(this.bus);
         this.ui = new Ui(this.bus);
         this.movementController = new MovementController(this.bus);
-        this.net = new Net("ws://localhost:3000", this.bus);
+        const host = window.location.hostname;
+        this.net = new Net(`ws://${host}:3000`, this.bus);
 
         // wysyłamy zdarzenie do innych klas, 
         // każda klasa może na nie odpowiedzieć, jeśli ustawi event this.bus.on("app:init", callback)
