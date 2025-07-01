@@ -10,6 +10,8 @@ export default class Ui {
         this.createLoginScreen();
         this.displayLoginScreen();
         this.createEventLog();
+        this.createRespawnScreen();
+        this.hideRespawnScreen();
     }
 
     setBusEvents = () => {
@@ -64,7 +66,6 @@ export default class Ui {
         });
 
         this.bus.on("net:kill-me", () => {
-            this.createRespawnScreen();
             this.displayRespawnScreen();
         })
 
@@ -307,10 +308,9 @@ export default class Ui {
     }
 
     createRespawnScreen = () => {
-        if (this.deathScreenContainer) return;
-
         this.deathScreenContainer = document.createElement("div");
         this.deathScreenContainer.id = 'death-screen-container';
+        document.body.appendChild(this.deathScreenContainer);
     }
 
     // KILL FEED UI
