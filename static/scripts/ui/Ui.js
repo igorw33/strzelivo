@@ -2,6 +2,7 @@ export default class Ui {
     bus;
     DELETE_MESSAGE_TIME = 15000;
     RESPAWN_TIME = 10000;
+    MAX_HP = 100;
 
     constructor(bus) {
         this.bus = bus;
@@ -48,6 +49,10 @@ export default class Ui {
         this.bus.on("net:userDisconnect", (data) => {
             this.createLog(data);
         });
+
+        this.bus.on("net:hp", (data) => {
+            this.setHpBar(data.hp);
+        })
 
         // KILL FEED
         this.bus.on("net:kill-feed", (data) => {
@@ -150,9 +155,9 @@ export default class Ui {
     createHpBar = (hp) => {
         let hpBar = document.createElement('div');
         hpBar.id = "hp-bar";
-        hpBar.maxHP = hp;
+        hpBar.maxHP = this.MAX_HP;
         hpBar.style.position = "relative"; // <-- KLUCZOWE
-        hpBar.style.width = 2 * hp + "px";  // np. dla 100hp → 200px
+        hpBar.style.width = 2 * this.MAX_HP + "px";  // np. dla 100hp → 200px
         hpBar.style.height = "20px";
         hpBar.style.border = "2px solid black";
         hpBar.style.backgroundColor = "#ff0000";  // czerwony tło jako "stracone HP"
@@ -177,8 +182,7 @@ export default class Ui {
         const leftHpBar = document.getElementById("left-hp-bar");
 
         if (hpBar && leftHpBar) {
-            const maxHP = hpBar.maxHP;
-            const percent = hp / maxHP;
+            const percent = hp / this.MAX_HP;
             const newWidth = percent * hpBar.clientWidth;  // Bazuj na aktualnej szerokości kontenera
 
             leftHpBar.style.width = `${newWidth}px`;
