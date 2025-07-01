@@ -419,6 +419,8 @@ export default class Game {
         const intersects = this.shootRaycaster.intersectObjects(this.scene.children, true).filter(hit => hit.object !== this.playerMesh);
 
         if (intersects.length > 0) {
+            console.log(intersects[0].object.name);
+
             const shootPoint = intersects[0].point;
             laserDot.position.set(shootPoint.x, shootPoint.y, shootPoint.z);
             this.scene.add(laserDot);

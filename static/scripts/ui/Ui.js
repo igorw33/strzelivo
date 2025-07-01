@@ -1,6 +1,7 @@
 export default class Ui {
     bus;
     DELETE_MESSAGE_TIME = 15000;
+    RESPAWN_TIME = 10000;
 
     constructor(bus) {
         this.bus = bus;
@@ -47,6 +48,15 @@ export default class Ui {
         this.bus.on("net:userDisconnect", (data) => {
             this.createLog(data);
         });
+
+        this.bus.on("net:hp", (data) => {
+            this.setHpBar(data.hp);
+        })
+
+        this.bus.on("net:kill-me", () => {
+            // this.createRespawnScreen();
+            // this.displayRespawnScreen();
+        })
     }
 
     // LOGIN SCREEN
@@ -131,23 +141,38 @@ export default class Ui {
         let hpBar = document.createElement('div');
         hpBar.id = "hp-bar";
         hpBar.maxHP = hp;
-        hpBar.style.width = 2 * hp + "px";
+        hpBar.style.position = "relative"; // <-- KLUCZOWE
+        hpBar.style.width = 2 * hp + "px";  // np. dla 100hp → 200px
         hpBar.style.height = "20px";
-        hpBar.style.border = "5px solid black";
-        hpBar.style.backgroundColor = "#ff0000";
+        hpBar.style.border = "2px solid black";
+        hpBar.style.backgroundColor = "#ff0000";  // czerwony tło jako "stracone HP"
+
+        let leftHpBar = document.createElement("div");
+        leftHpBar.id = "left-hp-bar";
+        leftHpBar.style.position = "absolute";
+        leftHpBar.style.left = "0";
+        leftHpBar.style.top = "0";
+        leftHpBar.style.height = "100%";
+        leftHpBar.style.backgroundColor = "#00ee00"; // zielony pasek
+
+        hpBar.appendChild(leftHpBar);
+
         return hpBar;
     }
 
     setHpBar = (hp) => {
-        const hpBar = document.getElementById("hp-bar");
-        hpBar.innerHTML = '';
-        let leftHpBar = document.createElement("div");
-        leftHpBar.style.position = "absolute";
-        leftHpBar.style.width = 2 * (hp / hpBar.maxHP) * 100 + 'px';
-        leftHpBar.style.height = "20px";
-        leftHpBar.style.backgroundColor = "#00ee00";
+        console.log("hp", hp);
 
-        hpBar.appendChild(leftHpBar);
+        const hpBar = document.getElementById("hp-bar");
+        const leftHpBar = document.getElementById("left-hp-bar");
+
+        if (hpBar && leftHpBar) {
+            const maxHP = hpBar.maxHP;
+            const percent = hp / maxHP;
+            const newWidth = percent * hpBar.clientWidth;  // Bazuj na aktualnej szerokości kontenera
+
+            leftHpBar.style.width = `${newWidth}px`;
+        }
     }
 
     // EVENT LOG (wiadomości o dołączaniu i wychodzeniu graczy)
@@ -238,4 +263,42 @@ export default class Ui {
         this.statsContainer.remove();
         this.statsContainer = null;
     }
+
+    // RESPAWN
+    // hideRespawnScreen = () => {
+    //     this.container.classList.remove('death-screen-container');
+    //     this.container.classList.add('death-screen-container-off');
+    // }
+
+    // displayRespawnScreen = () => {
+    //     this.container.classList.remove('death-screen-container-off');
+    //     this.container.classList.add('death-screen-container');
+    // }
+
+    // createRespawnScreen = () => {
+    //     this.container = document.createElement("div");
+    //     this.container.id = 'death-screen-container';
+
+    //     const timer = document.createElement('div');
+    //     let toRespawn = this.RESPAWN_TIME / 1000;
+
+    //     timer.innerHTML = toRespawn;
+    //     timer.classList.add('death-timer');
+    //     this.container.append(timer);
+
+    //     const interval = setInterval(() => {
+    //         toRespawn -= 1;
+    //         timer.innerHTML = toRespawn;
+    //         if (toRespawn == 0) {
+    //             clearInterval(interval);
+    //         }
+    //     }, 1000);
+
+    //     setTimeout(() => {
+    //         this.bus.emit('ui:respawn', { id: sessionStorage.getItem("playerID") })
+    //         this.hideRespawnScreen();
+    //     }, this.RESPAWN_TIME)
+
+    //     document.body.appendChild(this.container);
+    // }
 }

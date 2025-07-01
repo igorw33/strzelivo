@@ -239,6 +239,7 @@ bus.on('shoot', (data, socket, wss) => {
     const attacker = Players.getPlayer(data.id);
 
     targetPlayer.hp -= bodyPartToHP.get(data.bodyPart) - Math.random() * 5;
+
     const assists = targetPlayer.attackers;
 
     // jeśli nie ma w liście asystujących, dodaj asystującego
@@ -247,6 +248,7 @@ bus.on('shoot', (data, socket, wss) => {
     }
 
     if (targetPlayer.hp <= 0) {
+        targetPlayer.hp = 0;
         targetPlayer.stats.deaths++;
         targetPlayer.isAlive = false;
 
@@ -259,8 +261,19 @@ bus.on('shoot', (data, socket, wss) => {
             }
         })
 
-        broadcastExcept(sockets.get(data.targetPlayer), { type: 'player-killed', attacker: attacker.username, killed: targetPlayer.username }, wss)
+
+
+        broadcast({ type: 'player-killed', attacker: attacker.username, killed: targetPlayer.username }, wss.clients);
+
+        // czyszczenie pamięci asystujących
+        targetPlayer.attackers = [];
     }
+
+    sockets.get(data.targetPlayer).send(JSON.stringify({
+        type: 'hp',
+        hp: targetPlayer.hp
+    }))
+
 })
 
 

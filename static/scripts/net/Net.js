@@ -68,6 +68,19 @@ export default class Net {
         // Jakiś gracz się nie połączył po 10 sekundach, całkowite usunięcie go
         'user-remove': (data) => {
             this.bus.emit('net:playerRemove', data);
+        },
+
+        'player-killed': (data) => {
+            this.bus.emit('net:playerKilled', data);
+            if (data.killed == this.username) {
+                this.bus.emit("net:kill-me");
+            };
+        },
+
+        'hp': (data) => {
+            console.log("hp:", data);
+
+            this.bus.emit('net:hp', data);
         }
     };
 
