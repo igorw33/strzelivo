@@ -255,7 +255,7 @@ export default class Game {
             const dx = myPos.x - data.position.x;
             const dy = myPos.y - data.position.y;
             const dz = myPos.z - data.position.z;
-            const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+            const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
             let volume = 0;
             if (dist < 5) volume = 0.7;
             else if (dist > 8) volume = 0;
@@ -285,7 +285,7 @@ export default class Game {
             const dx = myPos.x - data.position.x;
             const dy = myPos.y - data.position.y;
             const dz = myPos.z - data.position.z;
-            const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+            const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
             let volume = 0;
             if (dist < 5) volume = 0.7;
             else if (dist > 8) volume = 0;
@@ -350,8 +350,9 @@ export default class Game {
         await this.loadMap();
 
         // Pomocnicze osie - można zakomentować/odkomentować (czerwona: x, żółta: y, niebieska: z)
-        this.axes = new THREE.AxesHelper(1000)
-        this.scene.add(this.axes)
+        // this.axes = new THREE.AxesHelper(1000)
+        // this.scene.add(this.axes)
+        this.camera.rotation.set(0, 0, 0);
 
         this.render();
     }
@@ -551,6 +552,93 @@ export default class Game {
     }
 
     shootHandle = () => {
+        const intersectTab = [];
+        const radius = 0.03;
+        const numRays = 14;
+        const points = [];
+        const forward = new THREE.Vector3();
+        this.camera.getWorldDirection(forward);
+        forward.normalize();
+
+        const worldUp = new THREE.Vector3(0, 1, 0);
+        let right = new THREE.Vector3().crossVectors(forward, worldUp).normalize();
+        let up = new THREE.Vector3().crossVectors(right, forward).normalize();
+        if (right.length() < 0.0001) {
+            right = new THREE.Vector3(1, 0, 0);
+            up = new THREE.Vector3(0, 0, 1);
+        }
+
+        for (let i = 0; i < numRays; i++) {
+            const angle = (2 * Math.PI / numRays) * i;
+            const x = radius * Math.cos(angle);
+            const y = radius * Math.sin(angle);
+            const offset = new THREE.Vector3()
+                .addScaledVector(right, x)
+                .addScaledVector(up, y);
+            points.push(offset);
+        }
+
+        const randomOffset = new THREE.Vector3();
+        if (!this.onGround) {
+            randomOffset.set(
+                this.SPREAD_FACTOR * (Math.random() - 0.5),
+                this.SPREAD_FACTOR * (Math.random() - 0.5),
+                this.SPREAD_FACTOR * (Math.random() - 0.5)
+            );
+        }
+
+        for (let i = 0; i < numRays; i++) {
+            const dotGeometry = new THREE.SphereGeometry(0.005, 8, 8);
+            const dotMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+            const laserDot = new THREE.Mesh(dotGeometry, dotMaterial);
+
+            const origin = this.camera.position.clone().add(points[i]);
+            const direction = forward.clone().add(randomOffset).normalize(); // ten sam kierunek dla wszystkich
+
+            direction.y += 0.115;
+
+            this.shootRaycaster.set(origin, direction);
+            this.shootRaycaster.far = 100;
+            const intersects = this.shootRaycaster.intersectObjects(this.scene.children, true).filter(hit => hit.object !== this.playerMesh);
+            intersectTab.push(intersects[0]);
+
+            const shootPoint = intersects[0].point;
+            laserDot.position.set(shootPoint.x, shootPoint.y, shootPoint.z);
+            // this.scene.add(laserDot);
+        }
+        console.log(intersectTab);
+
+        const hitCounts = {
+            head: 0,
+            body: 0,
+            legs: 0,
+        };
+        let hitPlayer;
+        intersectTab.forEach(element => {
+            switch (element.object.name) {
+                case "head":
+                    hitPlayer = element.object.playerId;
+                    hitCounts.head += 1;
+                    break;
+                case "body":
+                    hitPlayer = element.object.playerId;
+                    hitCounts.body += 1;
+                    break;
+                case "legs":
+                    hitPlayer = element.object.playerId;
+                    hitCounts.legs += 1;
+                    break;
+                default:
+                    break;
+            }
+        });
+        const maxHitType = Object.entries(hitCounts).reduce((maxEntry, currentEntry) => {
+            return currentEntry[1] > maxEntry[1] ? currentEntry : maxEntry;
+        }, ['none', 0]);
+
+        console.log(`Najwięcej trafień: ${maxHitType[0]} (${maxHitType[1]} trafień)`);
+
+
         const dotGeometry = new THREE.SphereGeometry(0.02, 8, 8);
         const dotMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
         const laserDot = new THREE.Mesh(dotGeometry, dotMaterial);
@@ -566,20 +654,12 @@ export default class Game {
         // direction.normalize();
         direction.y += 0.115;
 
-        // jeśli skok, to zmieniamy pozycję raycastera o losowe wartości
-        if (!this.onGround) {
-            direction.x += this.SPREAD_FACTOR * Math.sin(2 * Math.PI * Math.random());
-            direction.y += this.SPREAD_FACTOR * Math.sin(2 * Math.PI * Math.random());
-            direction.z += this.SPREAD_FACTOR * Math.sin(2 * Math.PI * Math.random());
-        }
-
         const playerPosition = this.camera.position;
         this.shootRaycaster.set(playerPosition, direction);
         this.shootRaycaster.far = 100;
         const intersects = this.shootRaycaster.intersectObjects(this.scene.children, true).filter(hit => hit.object !== this.playerMesh);
 
         if (intersects.length > 0) {
-            console.log(intersects[0].object.name);
 
             const shootPoint = intersects[0].point;
             laserDot.position.set(shootPoint.x, shootPoint.y, shootPoint.z);
@@ -591,8 +671,8 @@ export default class Game {
 
             const data = {
                 id: sessionStorage.getItem('playerID'),
-                bodyPart: intersects[0].object.name,
-                targetPlayer: intersects[0].object.playerId
+                bodyPart: maxHitType[0],
+                targetPlayer: hitPlayer
             };
 
             this.bus.emit('game:shoot', data);
