@@ -176,10 +176,30 @@ export default class Game {
 
         this.bus.on("movementController:mouseClick", (data) => {
             if (!this.dead) {
-                if (data.mouseLeft && this.UIHidden) { // jeśli lewy przycisk kliknięty
+                if (data.mouseLeft && this.UIHidden) {
                     this.shootHandle();
-                }
 
+                    // Odtwarzaj dźwięk glocka lokalnie
+                    if (!this.glockAudio) {
+                        this.glockAudio = new Audio('sounds/glock.mp3');
+                    } else {
+                        this.glockAudio.pause();
+                        this.glockAudio.currentTime = 0;
+                    }
+                    this.glockAudio.volume = 0.7;
+                    this.glockAudio.play();
+
+                    // Wyślij event do serwera
+                    const shootData = {
+                        id: sessionStorage.getItem('playerID'),
+                        position: {
+                            x: this.camera.position.x,
+                            y: this.camera.position.y,
+                            z: this.camera.position.z
+                        }
+                    };
+                    this.bus.emit("game:shoot-sound", shootData);
+                }
                 if (data.mouseRight) {
                     // pass
                 }
@@ -251,6 +271,31 @@ export default class Game {
                     audio.pause();
                     audio.currentTime = 1.0;
                 }, 500);
+            }
+        });
+
+        this.bus.on("net:shoot-sound", (data) => {
+            const myPos = this.camera.position;
+            const dx = myPos.x - data.position.x;
+            const dy = myPos.y - data.position.y;
+            const dz = myPos.z - data.position.z;
+            const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+            let volume = 0;
+            if (dist < 5) volume = 0.7;
+            else if (dist > 8) volume = 0;
+            else volume = 0.7 * (1 - (dist - 5) / 3);
+
+            if (volume > 0) {
+                if (!this.glockPlayers) this.glockPlayers = {};
+                if (!this.glockPlayers[data.id]) {
+                    this.glockPlayers[data.id] = new Audio('sounds/glock.mp3');
+                } else {
+                    this.glockPlayers[data.id].pause();
+                    this.glockPlayers[data.id].currentTime = 0;
+                }
+                const audio = this.glockPlayers[data.id];
+                audio.volume = volume;
+                audio.play();
             }
         });
     }
