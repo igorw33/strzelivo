@@ -37,6 +37,8 @@ export default class Game {
 
         this.lastFootstepTime = 0;
         this.footstepPlayers = {}; // {playerId: Audio}
+        this.lastShotTime = 0;
+        this.fireRate = 200; // ms między strzałami (5 strzałów na sekundę)
     }
 
     setBusEvents = () => {
@@ -177,28 +179,32 @@ export default class Game {
         this.bus.on("movementController:mouseClick", (data) => {
             if (!this.dead) {
                 if (data.mouseLeft && this.UIHidden) {
-                    this.shootHandle();
+                    const now = performance.now();
+                    if (now - this.lastShotTime >= this.fireRate) {
+                        this.lastShotTime = now;
+                        this.shootHandle();
 
-                    // Odtwarzaj dźwięk glocka lokalnie
-                    if (!this.glockAudio) {
-                        this.glockAudio = new Audio('sounds/glock.mp3');
-                    } else {
-                        this.glockAudio.pause();
-                        this.glockAudio.currentTime = 0;
-                    }
-                    this.glockAudio.volume = 0.7;
-                    this.glockAudio.play();
-
-                    // Wyślij event do serwera
-                    const shootData = {
-                        id: sessionStorage.getItem('playerID'),
-                        position: {
-                            x: this.camera.position.x,
-                            y: this.camera.position.y,
-                            z: this.camera.position.z
+                        // Odtwarzaj dźwięk glocka lokalnie
+                        if (!this.glockAudio) {
+                            this.glockAudio = new Audio('sounds/glock.mp3');
+                        } else {
+                            this.glockAudio.pause();
+                            this.glockAudio.currentTime = 0;
                         }
-                    };
-                    this.bus.emit("game:shoot-sound", shootData);
+                        this.glockAudio.volume = 0.7;
+                        this.glockAudio.play();
+
+                        // Wyślij event do serwera
+                        const shootData = {
+                            id: sessionStorage.getItem('playerID'),
+                            position: {
+                                x: this.camera.position.x,
+                                y: this.camera.position.y,
+                                z: this.camera.position.z
+                            }
+                        };
+                        this.bus.emit("game:shoot-sound", shootData);
+                    }
                 }
                 if (data.mouseRight) {
                     // pass
