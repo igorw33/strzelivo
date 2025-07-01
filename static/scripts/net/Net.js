@@ -107,6 +107,10 @@ export default class Net {
         'footstep': (data) => {
             this.bus.emit('net:footstep', data);
         },
+
+        'shoot-sound': (data) => {
+            this.bus.emit('net:shoot-sound', data);
+        },
     };
 
     constructor(url, bus) {
@@ -167,6 +171,12 @@ export default class Net {
             const id = sessionStorage.getItem('playerID');
             if (!id) return;
             this.send("footstep", { id, position: data.position });
+        });
+
+        this.bus.on("game:shoot-sound", (data) => {
+            const id = sessionStorage.getItem('playerID');
+            if (!id) return;
+            this.send("shoot-sound", { id, position: data.position });
         });
     }
 

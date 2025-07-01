@@ -28,6 +28,10 @@ const handlers = {
         bus.emit(data.type, data, ws, wss);
     },
 
+    'shoot-sound': (wss, ws, data) => {
+        bus.emit(data.type, data, ws, wss);
+    },
+
     'footstep': (wss, ws, data) => {
         bus.emit(data.type, data, ws, wss);
     }
