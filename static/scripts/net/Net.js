@@ -90,7 +90,14 @@ export default class Net {
             if (data.id == sessionStorage.getItem('playerID')) {
                 this.bus.emit("net:respawn-me", data);
             }
-        }
+        },
+
+        'user-killed': (data) => {
+            this.bus.emit('net:user-killed', data);
+        },
+        'kill-feed': (data) => {
+            this.bus.emit('net:kill-feed', data);
+        },
     };
 
     constructor(url, bus) {

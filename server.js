@@ -256,17 +256,29 @@ bus.on('shoot', (data, socket, wss) => {
 
         attacker.stats.kills++;
 
-        assists.forEach(a => {
-            if (a != attacker.id) {
-                const assistant = Players.getAllPlayers().find(p => p.id == a);
-                if (assistant) assistant.stats.assists++;
+        let assistantName = null;
+        if (assists.length > 1) {
+            // asysta to pierwszy gracz z assists, który nie jest zabójcą
+            const assistantId = assists.find(a => a !== attacker.id);
+            if (assistantId) {
+                const assistant = Players.getPlayer(assistantId);
+                if (assistant) {
+                    assistant.stats.assists++;
+                    assistantName = assistant.username;
+                }
             }
-        })
+        }
 
         // czyszczenie pamięci asystujących
         targetPlayer.attackers = [];
 
-        broadcast({ type: 'player-killed', attacker: attacker.username, killed: targetPlayer.username, killed_id: targetPlayer.id, attacker_id: attacker.id, assistants: assists }, wss.clients);
+        // POWIADOMIENIE O ZABÓJSTWIE
+        broadcast({
+            type: 'kill-feed',
+            killer: attacker.username,
+            victim: targetPlayer.username,
+            assist: assistantName // string lub null
+        }, Array.from(sockets.values()));
 
         setTimeout(() => {
             // Resetowanie wartości gracza
