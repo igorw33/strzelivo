@@ -461,7 +461,9 @@ export default class Game {
         // na pewno lepiej będzie zrobić osobnego setIntervala, żeby nie bazować na wydajności grafiki xd
         // Na razie rozwiązanie tymczasowe...
         if (this.frame % 3 == 0) {
-            this.bus.emit('game:sendPosition', { position: this.camera.position, rotation: this.camera.rotation });
+            const direction = new THREE.Vector3();
+            this.camera.getWorldDirection(direction);
+            this.bus.emit('game:sendPosition', { position: this.camera.position, rotation: direction });
         }
         this.frame++;
 
@@ -597,7 +599,15 @@ export default class Game {
                     element2.parent.position.x = element.position.x;
                     element2.parent.position.y = element.position.y - 0.8;
                     element2.parent.position.z = element.position.z;
-                    element2.parent.rotation.y = - element.rotation._y;
+                    // element2.parent.rotation.y = - element.rotation._y;
+
+                    const dir = new THREE.Vector3(
+                        element.rotation.x,
+                        element.rotation.y,
+                        element.rotation.z
+                    );
+                    const rotationY = Math.atan2(dir.x, dir.z);
+                    element2.parent.rotation.set(0, rotationY, 0);
                     // element2.position.x = element.position.x;
                     // element2.position.y = element.position.y;
                     // element2.position.z = element.position.z;
