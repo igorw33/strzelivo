@@ -117,7 +117,7 @@ export default class Game {
                     this.loadModel(element);
                 });
             } else {
-                if (this.playerTab.length * 3 < this.playerCollisionMeshes.length) {
+                if (this.playerTab.length * 4 < this.playerCollisionMeshes.length) {
                     const meshCountByPlayer = new Map();
 
                     for (let i = this.playerCollisionMeshes.length - 1; i >= 0; i--) {
@@ -127,7 +127,7 @@ export default class Game {
                         // Zliczanie meshy dla danego gracza
                         const currentCount = meshCountByPlayer.get(playerId) || 0;
 
-                        if (currentCount >= 3) {
+                        if (currentCount >= 4) {
                             // Usuwamy mesh ze sceny i z tablicy, bo jest nadmiarowy
                             this.scene.remove(mesh.parent);
                             this.playerCollisionMeshes.splice(i, 1);

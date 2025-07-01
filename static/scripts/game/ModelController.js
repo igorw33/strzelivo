@@ -70,7 +70,7 @@ export default class ModelController {
         const loader = new GLTFLoader();
 
         loader.load(
-            '../models/pd.glb',
+            '../models/player_final.glb',
             (glb) => {
                 console.log(data)
                 this.model = glb.scene;
