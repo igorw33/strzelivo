@@ -6,7 +6,7 @@ export default class Game {
     GRAVITY = 20;
     MAX_JUMP_VELOCITY = 6.3; // dane z instytutu badań z 
     UIHidden = false;
-    SPREAD_FACTOR = 0.1;
+    SPREAD_FACTOR = 0.3;
     SHOT_DEBRIS_LIFE_TIME = 5000;
 
     constructor(bus) {
@@ -387,7 +387,7 @@ export default class Game {
             // Podstawowe ustawienia
             this.weapon.scale.set(0.0012, 0.0012, 0.0012); // Dostosuj skalę
             this.weapon.position.set(0.5, -0.5, -1); // Pozycja względem kamery
-            this.weapon.rotation.set(0, (Math.PI/2)*3, -(Math.PI/2)*0.1);
+            this.weapon.rotation.set(0, (Math.PI / 2) * 3, -(Math.PI / 2) * 0.1);
 
             // Dodaj broń do kamery
             this.camera.add(this.weapon);
@@ -645,7 +645,7 @@ export default class Game {
             const origin = this.camera.position.clone().add(points[i]);
             const direction = forward.clone().add(randomOffset).normalize(); // ten sam kierunek dla wszystkich
 
-            direction.y += 0.115;
+            // direction.y += 0.115;
 
             this.shootRaycaster.set(origin, direction);
             this.shootRaycaster.far = 100;
@@ -698,7 +698,7 @@ export default class Game {
         const laserDot = new THREE.Mesh(dotGeometry, dotMaterial);
         const laserDirection = new THREE.Vector3();
         this.camera.getWorldDirection(laserDirection);
-        laserDirection.y += 0.115;
+        // laserDirection.y += 0.115;
 
         const raycaster = new THREE.Raycaster();
         raycaster.set(this.camera.position, laserDirection);
@@ -706,7 +706,13 @@ export default class Game {
         const direction = new THREE.Vector3();
         this.camera.getWorldDirection(direction); // pobieramy wektor kierunku kamery
         // direction.normalize();
-        direction.y += 0.115;
+        // direction.y += 0.115;
+
+        if (!this.onGround) {
+            direction.x += randomOffset.x;
+            direction.y += randomOffset.y;
+            direction.z += randomOffset.z;
+        }
 
         const playerPosition = this.camera.position;
         this.shootRaycaster.set(playerPosition, direction);
@@ -717,12 +723,14 @@ export default class Game {
         if (intersects.length > 0) {
 
             const shootPoint = intersects[0].point;
-            laserDot.position.set(shootPoint.x, shootPoint.y, shootPoint.z);
-            this.scene.add(laserDot);
+            if (!hitPlayer) {
+                laserDot.position.set(shootPoint.x, shootPoint.y, shootPoint.z);
+                this.scene.add(laserDot);
 
-            setTimeout(() => {
-                this.scene.remove(laserDot);
-            }, this.SHOT_DEBRIS_LIFE_TIME);
+                setTimeout(() => {
+                    this.scene.remove(laserDot);
+                }, this.SHOT_DEBRIS_LIFE_TIME);
+            }
 
             const data = {
                 id: sessionStorage.getItem('playerID'),
