@@ -162,6 +162,9 @@ bus.on('reconnect', (data, ws, wss) => {
 
     player.connected = true;
     console.log(`Gracz ${player.username} połączył się ponownie`);
+    player.rotation.x = 0;
+    player.rotation.y = 0;
+    player.rotation.z = 0;
     ids.set(ws, player.id);
     sockets.set(player.id, ws);
 
@@ -356,7 +359,7 @@ bus.on('shoot-sound', (data, socket, wss) => {
         const dy = player.position.y - data.position.y;
         const dz = player.position.z - data.position.z;
         const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-        if (dist <= 15) { 
+        if (dist <= 15) {
             const targetSocket = sockets.get(player.id);
             if (targetSocket && targetSocket.readyState === 1) {
                 targetSocket.send(JSON.stringify({

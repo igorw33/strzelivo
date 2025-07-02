@@ -371,7 +371,7 @@ export default class Game {
         // Pomocnicze osie - można zakomentować/odkomentować (czerwona: x, żółta: y, niebieska: z)
         // this.axes = new THREE.AxesHelper(1000)
         // this.scene.add(this.axes)
-        this.camera.rotation.set(0, 0, 0);
+        // this.camera.rotation.set(0, 0, 0);
 
         this.render();
     }
@@ -651,7 +651,7 @@ export default class Game {
             this.shootRaycaster.far = 100;
             this.shootRaycaster.near = 0;
             const intersects = this.shootRaycaster.intersectObjects(this.scene.children, true).filter(hit => hit.object !== this.playerMesh);
-            console.log(intersects)
+            // console.log(intersects)
             if (intersects.length > 0) {
                 intersectTab.push(intersects[0]);
 
@@ -660,7 +660,7 @@ export default class Game {
                 // this.scene.add(laserDot);
             }
         }
-        console.log(intersectTab);
+        // console.log(intersectTab);
 
         const hitCounts = {
             head: 0,
