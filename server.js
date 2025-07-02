@@ -331,8 +331,7 @@ bus.on('footstep', (data, socket, wss) => {
         const dy = player.position.y - data.position.y;
         const dz = player.position.z - data.position.z;
         const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-
-        if (dist <= 20) {
+        if (dist <= 8) {
             const targetSocket = sockets.get(player.id);
             if (targetSocket && targetSocket.readyState === 1) {
                 targetSocket.send(JSON.stringify({
@@ -357,8 +356,7 @@ bus.on('shoot-sound', (data, socket, wss) => {
         const dy = player.position.y - data.position.y;
         const dz = player.position.z - data.position.z;
         const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-
-        if (dist <= 8) { // analogicznie jak kroki
+        if (dist <= 15) { 
             const targetSocket = sockets.get(player.id);
             if (targetSocket && targetSocket.readyState === 1) {
                 targetSocket.send(JSON.stringify({

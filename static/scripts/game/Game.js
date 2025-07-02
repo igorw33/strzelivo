@@ -249,17 +249,24 @@ export default class Game {
         })
 
         this.bus.on("net:footstep", (data) => {
-            console.log('net:footstep', data);
 
             const myPos = this.camera.position;
             const dx = myPos.x - data.position.x;
             const dy = myPos.y - data.position.y;
             const dz = myPos.z - data.position.z;
             const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+            // Nowe wartości: większy zasięg i głośność malejąca z kwadratem odległości
             let volume = 0;
-            if (dist < 5) volume = 0.7;
-            else if (dist > 8) volume = 0;
-            else volume = 0.7 * (1 - (dist - 5) / 3);
+            const minDist = 2;
+            const maxDist = 8; // kroki słychać do 8 jednostek
+            if (dist < minDist) volume = 0.7;
+            else if (dist > maxDist) volume = 0;
+            else {
+                const norm = (dist - minDist) / (maxDist - minDist);
+                volume = 0.7 * (1 - norm * norm);
+            }
+
 
             if (volume > 0) {
                 if (!this.footstepPlayers[data.id]) {
@@ -286,10 +293,19 @@ export default class Game {
             const dy = myPos.y - data.position.y;
             const dz = myPos.z - data.position.z;
             const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+            // Zasięg do 30 jednostek, głośność maleje z kwadratem odległości
             let volume = 0;
-            if (dist < 5) volume = 0.7;
-            else if (dist > 8) volume = 0;
-            else volume = 0.7 * (1 - (dist - 5) / 3);
+            const minDist = 5;
+            const maxDist = 15; // strzały słychać do 100 jednostek
+            if (dist < minDist) volume = 0.7;
+            else if (dist > maxDist) volume = 0;
+            else {
+                const norm = (dist - minDist) / (maxDist - minDist);
+                volume = 0.7 * (1 - norm * norm);
+            }
+
+            console.log('shoot-sound dist', dist, 'volume', volume);
 
             if (volume > 0) {
                 if (!this.glockPlayers) this.glockPlayers = {};
