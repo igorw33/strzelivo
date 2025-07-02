@@ -305,6 +305,7 @@ export default class Game {
             }
         });
     }
+    weapon = null; // Dodaj tę zmienną na poziomie klasy
 
     // Generowanie sceny
     generateScene = async () => {
@@ -321,6 +322,8 @@ export default class Game {
         this.renderer.setSize(screen.width, screen.height);
         document.getElementById("root").append(this.renderer.domElement);
         this.camera.position.set(4, this.currentCam, 1230);
+        this.scene.add(this.camera);
+        await this.loadWeapon();
         // Potrzebne do sprawdzania czy gracz nie wchodzi w ścianę
         this.oldCamPos = this.camera.position.clone();
 
@@ -357,6 +360,32 @@ export default class Game {
         this.render();
     }
 
+    async loadWeapon() {
+        const loader = new GLTFLoader();
+
+        try {
+            // Załaduj model broni
+            const glb = await loader.loadAsync('../models/pistol2.glb');
+            this.weapon = glb.scene;
+
+            // Podstawowe ustawienia
+            this.weapon.scale.set(0.0012, 0.0012, 0.0012); // Dostosuj skalę
+            this.weapon.position.set(0.5, -0.5, -1); // Pozycja względem kamery
+            this.weapon.rotation.set(0, (Math.PI/2)*3, -(Math.PI/2)*0.1);
+
+            // Dodaj broń do kamery
+            this.camera.add(this.weapon);
+            console.log("Broń załadowana");
+        } catch (error) {
+            console.error("Błąd ładowania broni:", error);
+
+            // Awaryjna kula w przypadku błędu
+            const geometry = new THREE.SphereGeometry(0.2, 16, 16);
+            const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+            this.weapon = new THREE.Mesh(geometry, material);
+            this.camera.add(this.weapon);
+        }
+    }
     // Funkcja render, wywołująca się cały czas
     render = () => {
         // Zmiana pozycji raycastera na pozycję kamery
