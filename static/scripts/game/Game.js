@@ -21,6 +21,10 @@ export default class Game {
         // Startowa wysokość kamery
         this.currentCam = 1009.5;
 
+        // prędkość gracza
+        this.speed = 0;
+
+
         // Wysokość, o jaką gracz może maksymalnie skoczyć (do ustalenia)
         this.jumpHeight = 1;
         this.jumpVelocity = 0;
@@ -459,7 +463,26 @@ export default class Game {
         //wykonywanie funkcji bez końca, ok 60 fps jeśli pozwala na to wydajność maszyny
         requestAnimationFrame(this.render);
 
-        let speed = 0.06;
+        // let speed = 0.06;
+        let acceleration = 0.4;
+        let maxSpeed = 0.06;
+        let moving = false;
+
+        if (this.moveForward || this.moveBackward || this.moveLeft || this.moveRight) {
+            moving = true;
+        }
+
+        if (moving) {
+            this.speed += acceleration * delta;
+            if (this.speed > maxSpeed) this.speed = maxSpeed;
+        } else {
+            this.speed -= acceleration * delta;
+            if (this.speed < 0) this.speed = 0;
+        }
+
+        console.log(this.speed);
+
+
         const direction = new THREE.Vector3();
         this.camera.getWorldDirection(direction);
         direction.y = 0;
@@ -480,15 +503,15 @@ export default class Game {
             moveVector.normalize();
 
             // Przewidywanie nowej pozycji, dla niej sprawdzane jest czy gracz może się ruszyć
-            const newPosition = this.camera.position.clone().addScaledVector(moveVector, speed);
+            const newPosition = this.camera.position.clone().addScaledVector(moveVector, this.speed);
 
             this.wallRaycaster.set(this.camera.position, moveVector);
             this.wallRaycaster2.set(this.camera.position, moveVector);
             this.wallRaycaster3.set(this.camera.position, moveVector);
 
-            this.wallRaycaster.far = speed + 0.5; // 0.5 to jest jak blisko do ściany może być kamera
-            this.wallRaycaster2.far = speed + 0.5;
-            this.wallRaycaster3.far = speed + 0.5;
+            this.wallRaycaster.far = this.speed + 0.5; // 0.5 to jest jak blisko do ściany może być kamera
+            this.wallRaycaster2.far = this.speed + 0.5;
+            this.wallRaycaster3.far = this.speed + 0.5;
             this.wallRaycaster2.ray.origin.y -= 0.75; // Chcemy żeby raycaster był u stóp gracza
             this.wallRaycaster3.ray.origin.y -= 0.3; // Chcemy żeby raycaster był na wysokości, która określa czy gracz wchodzi na rampę
 
@@ -524,13 +547,13 @@ export default class Game {
 
                 // Przesuwamy się wzdłuż ściany
                 const angleFactor = Math.sin(1 - Math.abs(dot));  // Sliding siła zależna od kąta
-                const slideStrength = speed * angleFactor; // współczynnik siły slidingu
+                const slideStrength = this.speed * angleFactor; // współczynnik siły slidingu
 
                 const slidePosition = this.camera.position.clone().addScaledVector(slideVector, slideStrength);
 
                 // Sprawdzamy, czy po slidingu nie wchodzimy w inną ścianę
                 this.wallRaycaster.set(this.camera.position, slideVector);
-                this.wallRaycaster.far = speed + 0.5;
+                this.wallRaycaster.far = this.speed + 0.5;
                 const slideIntersects = this.wallRaycaster.intersectObjects(this.collisionMeshes, true);
 
                 if (slideIntersects.length == 0) {
