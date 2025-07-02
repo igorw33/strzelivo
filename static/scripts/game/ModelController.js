@@ -1,4 +1,5 @@
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import * as THREE from 'three';
 
 export default class ModelController {
     bus;
@@ -17,6 +18,7 @@ export default class ModelController {
 
         this.bus.on("game:loadMap", (data) => {
             this.mapLoad(data);
+            this.loadSky(data.scene);
         })
 
         this.bus.on("game:loadModel", (data) => {
@@ -107,4 +109,38 @@ export default class ModelController {
         )
 
     }
+
+    loadSky = (scene) => {
+        const loader = new GLTFLoader();
+
+
+        loader.load(
+            '../models/sky3.glb',
+            (glb) => {
+                const sky = glb.scene;
+
+                // Skalowanie i pozycjonowanie nieba
+                sky.position.set(1008, 0, 1232); // zakładam Y=1000 żeby było nad mapą
+                sky.scale.set(1500, 1500, 1500);
+
+
+                // Opcjonalnie: zablokuj renderowanie cieni itp.
+                sky.traverse((child) => {
+                    if (child.isMesh) {
+                        child.material.depthWrite = false;
+                        child.material.side = THREE.BackSide;
+                    }
+                });
+                sky.renderOrder = -1;
+                scene.add(sky);
+            },
+            (xhr) => {
+                console.log((xhr.loaded / xhr.total) * 100 + "% sky loaded");
+            },
+            (error) => {
+                console.log("An error happened loading sky:", error);
+            }
+        );
+    }
+
 }
