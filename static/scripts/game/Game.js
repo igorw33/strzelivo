@@ -459,7 +459,7 @@ export default class Game {
         //wykonywanie funkcji bez końca, ok 60 fps jeśli pozwala na to wydajność maszyny
         requestAnimationFrame(this.render);
 
-        let speed = 0.08;
+        let speed = 0.06;
         const direction = new THREE.Vector3();
         this.camera.getWorldDirection(direction);
         direction.y = 0;
