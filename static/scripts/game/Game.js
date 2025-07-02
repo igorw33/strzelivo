@@ -480,8 +480,6 @@ export default class Game {
             if (this.speed < 0) this.speed = 0;
         }
 
-        console.log(this.speed);
-
 
         const direction = new THREE.Vector3();
         this.camera.getWorldDirection(direction);
@@ -627,7 +625,7 @@ export default class Game {
     shootHandle = () => {
         const intersectTab = [];
         const radius = 0.03;
-        const numRays = 14;
+        const numRays = 10;
         const points = [];
         const forward = new THREE.Vector3();
         this.camera.getWorldDirection(forward);
