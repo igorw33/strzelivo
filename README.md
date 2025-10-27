@@ -50,6 +50,7 @@ WASD to move, space to jump, left mouse button to shoot.
 - Killfeed
 - Bullet spread while jumping
 - Multiple spawnpoint locations
+- Gunshots and footsteps sounds
 
 
 ## Tech Stack
